@@ -1,0 +1,23 @@
+/**
+ * MVP email event catalog (§15.2) — HTML + plain text via MailService / BullMQ.
+ */
+export const EMAIL_EVENT_CATALOG = [
+  'OTP',
+  'NEW_REQUIREMENT',
+  'NEW_APPLICATION',
+  'SHORTLISTED',
+  'DEMO_SCHEDULED',
+  'DEMO_REMINDER',
+  'DEMO_COMPLETED',
+  'DEMO_CANCELLED',
+  'MATCHED', // agreement ACTIVE
+  'AGREEMENT_SIGNED',
+  'AGREEMENT_ACTIVE',
+  'PAYMENT_DUE',
+  'PAYMENT_RECEIPT',
+  'PAYMENT_OVERDUE',
+  'SLOT_RELEASED',
+  'SESSION_REMINDER',
+  'VERIFICATION_APPROVED',
+  'VERIFICATION_REJECTED',
+] as const;

@@ -1,0 +1,662 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  TUTOR
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+enum RegistrationFeeStatus {
+  PENDING
+  PAID
+  WAIVED
+  REFUNDED
+}
+
+enum RegistrationFeeChoice {
+  PAY_NOW
+  EARN_FIRST
+}
+
+enum CommissionStatus {
+  PENDING
+  GENERATED
+  PAID
+  OVERDUE
+  WAIVED
+  CANCELLED
+}
+
+enum PaymentType {
+  REGISTRATION
+  COMMISSION
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum TeachingMode {
+  ONLINE
+  OFFLINE
+}
+
+enum WeekDay {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+}
+
+enum DocumentType {
+  PHOTO
+  CERTIFICATE
+  OTHER
+  AADHAAR
+  PAN
+  DEGREE
+}
+
+enum DocumentStatus {
+  UPLOADED
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum VerificationStatus {
+  NOT_SUBMITTED
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DisputeType {
+  PAYMENT
+  CONDUCT
+  SCHEDULE
+  QUALITY
+  OTHER
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  CLOSED
+}
+
+enum RequirementStatus {
+  DRAFT
+  OPEN
+  APPLIED
+  SHORTLISTED
+  MATCHED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum RequirementMode {
+  ONLINE
+  OFFLINE
+  BOTH
+}
+
+enum MatchStatus {
+  INVITED
+  APPLIED
+  SHORTLISTED
+  ACCEPTED
+  MATCHED
+  REJECTED
+  WITHDRAWN
+}
+
+model User {
+  id               String     @id @default(uuid())
+  mobile           String     @unique
+  email            String     @unique
+  passwordHash     String?    @map("password_hash")
+  refreshTokenHash String?    @map("refresh_token_hash")
+  role             UserRole
+  status           UserStatus @default(PENDING_VERIFICATION)
+  locale           String     @default("en")
+  name             String
+  qualification    String?
+  createdAt        DateTime   @default(now()) @map("created_at")
+  updatedAt        DateTime   @updatedAt @map("updated_at")
+
+  student         Student?
+  tutor           Tutor?
+  payments        Payment[]
+  notifications   Notification[]
+  ratingsGiven    Rating[]  @relation("RatingsGiven")
+  ratingsReceived Rating[]  @relation("RatingsReceived")
+  disputesRaised  Dispute[] @relation("DisputesRaised")
+  chatMessages    ChatMessage[]
+
+  @@map("users")
+}
+
+model Student {
+  id                String   @id @default(uuid())
+  userId            String   @unique @map("user_id")
+  preferredLanguage String?  @map("preferred_language")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requirements Requirement[]
+  commissions  Commission[]
+
+  @@map("students")
+}
+
+model Tutor {
+  id                       String             @id @default(uuid())
+  userId                   String             @unique @map("user_id")
+  bio                      String?
+  experienceYears          Int?               @map("experience_years")
+  photoUrl                 String?            @map("photo_url")
+  registrationFeeStatus    RegistrationFeeStatus @default(PENDING) @map("registration_fee_status")
+  registrationFeeChoice    RegistrationFeeChoice? @map("registration_fee_choice")
+  teachingRadiusKm         Int?               @map("teaching_radius_km")
+  pincode                  String?
+  latitude                 Float?
+  longitude                Float?
+  /// PostGIS geography(Point,4326) — maintained by DB trigger from lat/lng
+  location                 Unsupported("geography(Point,4326)")?
+  isDiscoverable           Boolean            @default(false) @map("is_discoverable")
+  verificationStatus       VerificationStatus @default(NOT_SUBMITTED) @map("verification_status")
+  isVerified               Boolean            @default(false) @map("is_verified")
+  verificationRejectReason String?            @map("verification_reject_reason")
+  ratingAvg                Float?             @map("rating_avg")
+  ratingCount              Int                @default(0) @map("rating_count")
+  createdAt                DateTime           @default(now()) @map("created_at")
+  updatedAt                DateTime           @updatedAt @map("updated_at")
+
+  user                   User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subjects               TutorSubject[]
+  classes                TutorClass[]
+  boards                 TutorBoard[]
+  availability           TutorAvailability[]
+  documents              TutorDocument[]
+  matches                Match[]
+  scheduleSlots          ScheduleSlot[]
+  commissions            Commission[]
+  availabilityExceptions TutorAvailabilityException[]
+
+  @@index([verificationStatus])
+  @@index([isVerified])
+  @@map("tutors")
+}
+
+model Subject {
+  id           String         @id @default(uuid())
+  nameEn       String         @map("name_en")
+  nameHi       String         @map("name_hi")
+  tutors       TutorSubject[]
+  requirements Requirement[]
+
+  @@unique([nameEn])
+  @@map("subjects")
+}
+
+model ClassLevel {
+  id           String         @id @default(uuid())
+  nameEn       String         @map("name_en")
+  nameHi       String         @map("name_hi")
+  sortOrder    Int            @default(0) @map("sort_order")
+  tutors       TutorClass[]
+  requirements Requirement[]
+
+  @@unique([nameEn])
+  @@map("classes")
+}
+
+model Board {
+  id           String         @id @default(uuid())
+  nameEn       String         @map("name_en")
+  nameHi       String         @map("name_hi")
+  tutors       TutorBoard[]
+  requirements Requirement[]
+
+  @@unique([nameEn])
+  @@map("boards")
+}
+
+model TutorSubject {
+  tutorId   String @map("tutor_id")
+  subjectId String @map("subject_id")
+
+  tutor   Tutor   @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@id([tutorId, subjectId])
+  @@map("tutor_subjects")
+}
+
+model TutorClass {
+  tutorId String @map("tutor_id")
+  classId String @map("class_id")
+
+  tutor Tutor      @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  class ClassLevel @relation(fields: [classId], references: [id], onDelete: Cascade)
+
+  @@id([tutorId, classId])
+  @@map("tutor_classes")
+}
+
+model TutorBoard {
+  tutorId String @map("tutor_id")
+  boardId String @map("board_id")
+
+  tutor Tutor @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  board Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  @@id([tutorId, boardId])
+  @@map("tutor_boards")
+}
+
+model TutorAvailability {
+  id        String       @id @default(uuid())
+  tutorId   String       @map("tutor_id")
+  day       WeekDay
+  startTime String       @map("start_time")
+  endTime   String       @map("end_time")
+  mode      TeachingMode
+
+  tutor Tutor @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@index([tutorId])
+  @@map("tutor_availability")
+}
+
+/// All-day block on a calendar date (IST). Tutor cannot be booked that day.
+model TutorAvailabilityException {
+  id        String   @id @default(uuid())
+  tutorId   String   @map("tutor_id")
+  /// Calendar date in Asia/Kolkata (stored as DATE)
+  date      DateTime @db.Date
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tutor Tutor @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@unique([tutorId, date])
+  @@index([tutorId, date])
+  @@map("tutor_availability_exceptions")
+}
+
+model TutorDocument {
+  id                 String             @id @default(uuid())
+  tutorId            String             @map("tutor_id")
+  type               DocumentType
+  fileUrl            String             @map("file_url")
+  fileName           String             @map("file_name")
+  storageKey         String?            @map("storage_key")
+  status             DocumentStatus     @default(UPLOADED)
+  verificationStatus VerificationStatus @default(PENDING) @map("verification_status")
+  piiCiphertext      String?            @map("pii_ciphertext")
+  piiLast4           String?            @map("pii_last4")
+  reviewedAt         DateTime?          @map("reviewed_at")
+  reviewedBy         String?            @map("reviewed_by")
+  createdAt          DateTime           @default(now()) @map("created_at")
+
+  tutor Tutor @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@index([tutorId])
+  @@index([verificationStatus])
+  @@map("tutor_documents")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?  @map("actor_id")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id")
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+model Requirement {
+  id            String            @id @default(uuid())
+  studentId     String            @map("student_id")
+  subjectId     String            @map("subject_id")
+  classId       String            @map("class_id")
+  boardId       String            @map("board_id")
+  budgetMin     Int               @map("budget_min")
+  budgetMax     Int               @map("budget_max")
+  mode          RequirementMode
+  scheduleDays  WeekDay[]         @map("schedule_days")
+  scheduleTime  String?           @map("schedule_time")
+  durationMins  Int               @default(60) @map("duration_mins")
+  pincode       String?
+  address       String?
+  latitude      Float?
+  longitude     Float?
+  /// PostGIS geography(Point,4326) — maintained by DB trigger from lat/lng
+  location      Unsupported("geography(Point,4326)")?
+  notes         String?
+  status        RequirementStatus @default(DRAFT)
+  publishedAt   DateTime?         @map("published_at")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  student Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject Subject    @relation(fields: [subjectId], references: [id])
+  class   ClassLevel @relation(fields: [classId], references: [id])
+  board   Board      @relation(fields: [boardId], references: [id])
+  matches Match[]
+
+  @@index([status, subjectId])
+  @@index([studentId])
+  @@map("requirements")
+}
+
+model Match {
+  id            String      @id @default(uuid())
+  requirementId String      @map("requirement_id")
+  tutorId       String      @map("tutor_id")
+  status        MatchStatus
+  score         Float       @default(0)
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  requirement Requirement  @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+  tutor       Tutor        @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  application Application?
+  demoClasses DemoClass[]
+  agreement   Agreement?
+
+  @@unique([requirementId, tutorId])
+  @@index([requirementId, status])
+  @@index([tutorId])
+  @@map("matches")
+}
+
+model Application {
+  id          String   @id @default(uuid())
+  matchId     String   @unique @map("match_id")
+  message     String?
+  proposedFee Int?     @map("proposed_fee")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@map("applications")
+}
+
+enum DemoClassStatus {
+  REQUESTED
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum SlotStatus {
+  AVAILABLE
+  OCCUPIED
+  RELEASED
+}
+
+enum SlotSource {
+  DEMO
+  AGREEMENT
+}
+
+enum AgreementStatus {
+  DRAFT
+  PENDING_STUDENT_SIGN
+  PENDING_TUTOR_SIGN
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model DemoClass {
+  id             String          @id @default(uuid())
+  matchId        String          @map("match_id")
+  scheduledAt    DateTime        @map("scheduled_at")
+  durationMins   Int             @default(45) @map("duration_mins")
+  mode           TeachingMode
+  status         DemoClassStatus @default(SCHEDULED)
+  joinDetails    String?         @map("join_details")
+  reminderSentAt DateTime?       @map("reminder_sent_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId])
+  @@index([scheduledAt])
+  @@index([status, scheduledAt])
+  @@map("demo_classes")
+}
+
+model ScheduleSlot {
+  id          String     @id @default(uuid())
+  tutorId     String     @map("tutor_id")
+  startAt     DateTime   @map("start_at")
+  endAt       DateTime   @map("end_at")
+  status      SlotStatus @default(OCCUPIED)
+  source      SlotSource
+  agreementId String?    @map("agreement_id")
+  demoClassId String?    @map("demo_class_id")
+  mode        TeachingMode?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  tutor     Tutor      @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  agreement Agreement? @relation(fields: [agreementId], references: [id], onDelete: SetNull)
+
+  @@index([tutorId, startAt])
+  @@index([agreementId])
+  @@map("schedule_slots")
+}
+
+model Agreement {
+  id                 String          @id @default(uuid())
+  matchId            String          @map("match_id")
+  monthlyFee         Int             @map("monthly_fee")
+  scheduleJson       Json            @map("schedule_json")
+  status             AgreementStatus @default(DRAFT)
+  pdfUrl             String?         @map("pdf_url")
+  pdfStorageKey      String?         @map("pdf_storage_key")
+  studentSignedAt    DateTime?       @map("student_signed_at")
+  tutorSignedAt      DateTime?       @map("tutor_signed_at")
+  studentSignIp      String?         @map("student_sign_ip")
+  tutorSignIp        String?         @map("tutor_sign_ip")
+  termsText          String          @map("terms_text") @db.Text
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+
+  match      Match          @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  slots      ScheduleSlot[]
+  commission Commission?
+  ratings    Rating[]
+  disputes   Dispute[]
+  chatThread ChatThread?
+
+  @@unique([matchId])
+  @@index([status])
+  @@map("agreements")
+}
+
+model Rating {
+  id          String   @id @default(uuid())
+  agreementId String   @map("agreement_id")
+  raterUserId String   @map("rater_user_id")
+  rateeUserId String   @map("ratee_user_id")
+  score       Int
+  review      String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  agreement Agreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  rater     User      @relation("RatingsGiven", fields: [raterUserId], references: [id], onDelete: Cascade)
+  ratee     User      @relation("RatingsReceived", fields: [rateeUserId], references: [id], onDelete: Cascade)
+
+  @@unique([agreementId, raterUserId])
+  @@index([rateeUserId])
+  @@map("ratings")
+}
+
+model Dispute {
+  id              String        @id @default(uuid())
+  agreementId     String        @map("agreement_id")
+  raisedByUserId  String        @map("raised_by_user_id")
+  type            DisputeType
+  status          DisputeStatus @default(OPEN)
+  description     String        @db.Text
+  resolution      String?       @db.Text
+  evidenceUrls    Json          @default("[]") @map("evidence_urls")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+  resolvedAt      DateTime?     @map("resolved_at")
+  resolvedBy      String?       @map("resolved_by")
+
+  agreement Agreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  raisedBy  User      @relation("DisputesRaised", fields: [raisedByUserId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([agreementId])
+  @@map("disputes")
+}
+
+model Commission {
+  id                   String           @id @default(uuid())
+  tutorId              String           @map("tutor_id")
+  studentId            String           @map("student_id")
+  agreementId          String           @unique @map("agreement_id")
+  monthlyFee           Int              @map("monthly_fee")
+  commissionGross      Int              @map("commission_gross")
+  commissionTaxable    Decimal          @map("commission_taxable") @db.Decimal(12, 2)
+  commissionGst        Decimal          @map("commission_gst") @db.Decimal(12, 2)
+  registrationGross    Int              @default(0) @map("registration_gross")
+  registrationTaxable  Decimal          @default(0) @map("registration_taxable") @db.Decimal(12, 2)
+  registrationGst      Decimal          @default(0) @map("registration_gst") @db.Decimal(12, 2)
+  taxableAmount        Decimal          @map("taxable_amount") @db.Decimal(12, 2)
+  gstAmount            Decimal          @map("gst_amount") @db.Decimal(12, 2)
+  grossAmount          Int              @map("gross_amount")
+  status               CommissionStatus @default(GENERATED)
+  dueAt                DateTime?        @map("due_at")
+  paidAt               DateTime?        @map("paid_at")
+  waivedReason         String?          @map("waived_reason")
+  invoicePdfUrl        String?          @map("invoice_pdf_url")
+  invoiceStorageKey    String?          @map("invoice_storage_key")
+  createdAt            DateTime         @default(now()) @map("created_at")
+  updatedAt            DateTime         @updatedAt @map("updated_at")
+
+  tutor     Tutor     @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  agreement Agreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+
+  @@unique([tutorId, studentId])
+  @@index([tutorId, status])
+  @@index([status, dueAt])
+  @@map("commissions")
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  payerId           String        @map("payer_id")
+  type              PaymentType
+  status            PaymentStatus @default(CREATED)
+  grossAmount       Int           @map("gross_amount")
+  taxableAmount     Decimal       @map("taxable_amount") @db.Decimal(12, 2)
+  gstAmount         Decimal       @map("gst_amount") @db.Decimal(12, 2)
+  gatewayOrderId    String?       @unique @map("gateway_order_id")
+  gatewayPaymentId  String?       @map("gateway_payment_id")
+  gatewaySignature  String?       @map("gateway_signature")
+  entityType        String        @map("entity_type")
+  entityId          String        @map("entity_id")
+  receiptUrl        String?       @map("receipt_url")
+  failureReason     String?       @map("failure_reason")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  payer User @relation(fields: [payerId], references: [id], onDelete: Cascade)
+
+  @@index([payerId, type])
+  @@index([entityType, entityId])
+  @@index([status])
+  @@map("payments")
+}
+
+model Notification {
+  id        String             @id @default(uuid())
+  userId    String             @map("user_id")
+  event     String
+  channel   String             @default("EMAIL")
+  payload   Json?
+  status    NotificationStatus @default(PENDING)
+  attempts  Int                @default(0)
+  sentAt    DateTime?          @map("sent_at")
+  lastError String?            @map("last_error")
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([event])
+  @@map("notifications")
+}
+
+model ChatThread {
+  id          String   @id @default(uuid())
+  agreementId String   @unique @map("agreement_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  agreement Agreement     @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  messages  ChatMessage[]
+
+  @@map("chat_threads")
+}
+
+model ChatMessage {
+  id           String   @id @default(uuid())
+  threadId     String   @map("thread_id")
+  senderUserId String   @map("sender_user_id")
+  body         String   @db.VarChar(2000)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  thread ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sender User       @relation(fields: [senderUserId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+  @@map("chat_messages")
+}
