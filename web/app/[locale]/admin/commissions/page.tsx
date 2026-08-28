@@ -1,9 +1,18 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import {
+  Alert,
+  Button,
+  ButtonLink,
+  Card,
+  EmptyState,
+  FormField,
+  PageHeader,
+  Textarea,
+} from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { FormEvent, useEffect, useState } from 'react';
@@ -63,79 +72,93 @@ export default function AdminCommissionsPage() {
   };
 
   return (
-    <>
-      <SiteHeader />
+    <AppFrame>
       <main className="mx-auto max-w-5xl px-4 py-10">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold">{t('commissionsTitle')}</h1>
-          <Link href={`/${locale}/dashboard/admin`} className="text-sm text-blue-600">
-            {tc('back')}
-          </Link>
-        </div>
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-        {!rows.length && <p className="text-gray-600">{t('commissionsEmpty')}</p>}
-        <ul className="space-y-3">
-          {rows.map((r) => (
-            <li key={r.id} className="rounded-lg bg-white p-4 shadow">
-              <p className="font-medium">
-                {r.tutorName ?? 'Tutor'} → {r.studentName ?? 'Student'} — ₹
-                {r.grossAmount}
-              </p>
-              <p className="text-sm text-gray-600">
-                {tc('status')}: {r.status} · GST ₹{r.gstAmount}
-                {r.dueAt ? ` · due ${new Date(r.dueAt).toLocaleDateString()}` : ''}
-              </p>
-              {r.waivedReason && (
-                <p className="mt-1 text-sm text-gray-500">
-                  {t('waived')}: {r.waivedReason}
-                </p>
-              )}
-              {(r.status === 'GENERATED' || r.status === 'OVERDUE') && (
-                <button
-                  type="button"
-                  className="mt-2 text-sm text-amber-800 underline"
-                  onClick={() => {
-                    setWaiveId(r.id);
-                    setReason('');
-                  }}
-                >
-                  {t('waive')}
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
+        <PageHeader
+          title={t('commissionsTitle')}
+          actions={
+            <ButtonLink
+              href={`/${locale}/dashboard/admin`}
+              variant="link"
+              size="sm"
+            >
+              {tc('back')}
+            </ButtonLink>
+          }
+        />
+        {error && <Alert className="mb-3">{error}</Alert>}
+        {!rows.length ? (
+          <EmptyState title={t('commissionsEmpty')} />
+        ) : (
+          <ul className="space-y-3">
+            {rows.map((r) => (
+              <li key={r.id}>
+                <Card className="p-4">
+                  <p className="font-medium text-ink">
+                    {r.tutorName ?? 'Tutor'} → {r.studentName ?? 'Student'} — ₹
+                    {r.grossAmount}
+                  </p>
+                  <p className="text-sm text-ink-muted">
+                    {tc('status')}: {r.status} · GST ₹{r.gstAmount}
+                    {r.dueAt
+                      ? ` · due ${new Date(r.dueAt).toLocaleDateString()}`
+                      : ''}
+                  </p>
+                  {r.waivedReason && (
+                    <p className="mt-1 text-sm text-ink-muted">
+                      {t('waived')}: {r.waivedReason}
+                    </p>
+                  )}
+                  {(r.status === 'GENERATED' || r.status === 'OVERDUE') && (
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="mt-2 text-amber-800"
+                      onClick={() => {
+                        setWaiveId(r.id);
+                        setReason('');
+                      }}
+                    >
+                      {t('waive')}
+                    </Button>
+                  )}
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {waiveId && (
-          <form
-            onSubmit={submitWaive}
-            className="mt-6 space-y-3 rounded-lg border bg-white p-4 shadow"
-          >
-            <p className="font-medium">{t('waiveTitle')}</p>
-            <textarea
-              required
-              minLength={5}
-              className="w-full rounded border px-3 py-2 text-sm"
-              rows={3}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder={t('waiveReason')}
-            />
-            <div className="flex gap-2">
-              <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-white">
-                {t('confirmWaive')}
-              </button>
-              <button
-                type="button"
-                className="rounded border px-4 py-2"
-                onClick={() => setWaiveId(null)}
-              >
-                {tc('cancel')}
-              </button>
-            </div>
-          </form>
+          <Card className="mt-6">
+            <form onSubmit={submitWaive} className="space-y-3">
+              <p className="font-medium text-ink">{t('waiveTitle')}</p>
+              <FormField label={t('waiveReason')} id="admin-waive-reason">
+                {(id) => (
+                  <Textarea
+                    id={id}
+                    required
+                    minLength={5}
+                    rows={3}
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                  />
+                )}
+              </FormField>
+              <div className="flex gap-2">
+                <Button type="submit">{t('confirmWaive')}</Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setWaiveId(null)}
+                >
+                  {tc('cancel')}
+                </Button>
+              </div>
+            </form>
+          </Card>
         )}
       </main>
-    </>
+    </AppFrame>
   );
 }

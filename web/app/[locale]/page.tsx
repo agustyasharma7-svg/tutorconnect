@@ -1,36 +1,43 @@
+import type { Metadata } from 'next';
+import { SiteFooter } from '@/components/SiteFooter';
 import { SiteHeader } from '@/components/SiteHeader';
-import Link from 'next/link';
+import { HomeLanding } from '@/components/home/HomeLanding';
 import { getTranslations } from 'next-intl/server';
 
-export default async function HomePage({ params }: { params: { locale: string } }) {
-  const t = await getTranslations('home');
-  const { locale } = params;
+export async function generateMetadata({
+  params,
+}: {
+  params: { locale: string };
+}): Promise<Metadata> {
+  const t = await getTranslations({ locale: params.locale, namespace: 'home' });
+  const title = `TutorConnect India — ${t('hero')}`;
+  const description = t('metaDescription');
+  return {
+    title,
+    description,
+    alternates: {
+      languages: {
+        en: '/en',
+        hi: '/hi',
+      },
+    },
+    openGraph: {
+      title,
+      description,
+      locale: params.locale === 'hi' ? 'hi_IN' : 'en_IN',
+      type: 'website',
+    },
+  };
+}
 
+export default async function HomePage() {
   return (
     <>
       <SiteHeader />
-      <main className="mx-auto max-w-5xl px-4 py-16 text-center">
-        <h1 className="mb-4 text-4xl font-bold text-gray-900">{t('hero')}</h1>
-        <div className="mt-8 flex justify-center gap-4">
-          <Link
-            href={`/${locale}/auth/register/student`}
-            className="rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700"
-          >
-            {t('ctaStudent')}
-          </Link>
-          <Link
-            href={`/${locale}/auth/register/tutor`}
-            className="rounded-lg border border-blue-600 px-6 py-3 font-medium text-blue-600 hover:bg-blue-50"
-          >
-            {t('ctaTutor')}
-          </Link>
-        </div>
-        <p className="mt-6">
-          <Link href={`/${locale}/auth/login`} className="text-blue-600 underline">
-            Login
-          </Link>
-        </p>
+      <main id="main">
+        <HomeLanding />
       </main>
+      <SiteFooter />
     </>
   );
 }

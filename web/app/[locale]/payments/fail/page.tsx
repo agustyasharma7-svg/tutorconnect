@@ -1,7 +1,7 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
-import Link from 'next/link';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import { Alert, ButtonLink, Card, PageHeader } from '@/components/ui';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
@@ -12,19 +12,21 @@ export default function PaymentFailPage() {
   const reason = params.get('reason');
 
   return (
-    <>
-      <SiteHeader />
+    <AppFrame>
       <main className="mx-auto max-w-lg px-4 py-10">
-        <h1 className="mb-2 text-2xl font-bold text-red-700">{t('failTitle')}</h1>
-        <p className="mb-4 text-gray-600">{t('failBlurb')}</p>
-        {reason && <p className="mb-4 text-sm text-red-600">{reason}</p>}
-        <Link
-          href={`/${locale}/commissions`}
-          className="rounded bg-blue-600 px-4 py-2 text-white"
-        >
-          {t('tryAgain')}
-        </Link>
+        <PageHeader title={t('failTitle')} />
+        <Card>
+          <Alert>{t('failBlurb')}</Alert>
+          {reason && (
+            <p className="mt-3 text-sm text-danger" role="alert">
+              {reason}
+            </p>
+          )}
+          <ButtonLink href={`/${locale}/commissions`} className="mt-5">
+            {t('tryAgain')}
+          </ButtonLink>
+        </Card>
       </main>
-    </>
+    </AppFrame>
   );
 }

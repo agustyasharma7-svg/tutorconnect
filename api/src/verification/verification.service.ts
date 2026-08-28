@@ -13,6 +13,7 @@ import { AuditService } from '../common/audit.service';
 import { PiiCryptoService } from '../common/pii-crypto.service';
 import { TutorsService } from '../tutors/tutors.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 const ID_DOC_TYPES: DocumentType[] = [
   DocumentType.AADHAAR,
@@ -28,6 +29,7 @@ export class VerificationService {
     private readonly pii: PiiCryptoService,
     private readonly tutors: TutorsService,
     private readonly notifications: NotificationsService,
+    private readonly cloudinary: CloudinaryService,
   ) {}
 
   async getMine(userId: string) {
@@ -44,7 +46,15 @@ export class VerificationService {
         id: d.id,
         type: d.type,
         fileName: d.fileName,
-        fileUrl: d.fileUrl,
+        // Never return permanent public URL — signed on demand via admin/tutor view
+        fileUrl: d.storageKey
+          ? this.cloudinary.signedUrl(d.storageKey, {
+              resourceType: d.fileName?.toLowerCase().endsWith('.pdf')
+                ? 'raw'
+                : 'image',
+              expiresInSeconds: 300,
+            })
+          : null,
         status: d.status,
         verificationStatus: d.verificationStatus,
         piiMasked: this.pii.maskLast4(d.piiLast4),
@@ -81,7 +91,8 @@ export class VerificationService {
       data: {
         tutorId: tutor.id,
         type,
-        fileUrl: uploaded.secure_url,
+        // Store public_id reference only; delivery uses signed URLs
+        fileUrl: uploaded.public_id,
         fileName: file.originalname,
         storageKey: uploaded.public_id,
         status: DocumentStatus.PENDING_REVIEW,
@@ -163,7 +174,14 @@ export class VerificationService {
       id: doc.id,
       type: doc.type,
       fileName: doc.fileName,
-      fileUrl: doc.fileUrl,
+      fileUrl: doc.storageKey
+        ? this.cloudinary.signedUrl(doc.storageKey, {
+            resourceType: doc.fileName?.toLowerCase().endsWith('.pdf')
+              ? 'raw'
+              : 'image',
+            expiresInSeconds: 300,
+          })
+        : null,
       piiMasked: this.pii.maskLast4(doc.piiLast4),
       tutorName: doc.tutor.user.name,
       verificationStatus: doc.verificationStatus,
@@ -219,6 +237,7 @@ export class VerificationService {
       })
       .catch(() => undefined);
 
+    await this.tutors.refreshDiscoverable(tutorId);
     return { ok: true, isVerified: true };
   }
 
@@ -275,6 +294,7 @@ export class VerificationService {
       })
       .catch(() => undefined);
 
+    await this.tutors.refreshDiscoverable(tutorId);
     return { ok: true, isVerified: false };
   }
 }

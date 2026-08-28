@@ -2,12 +2,13 @@ import { Module } from '@nestjs/common';
 import { StudentsModule } from '../students/students.module';
 import { TutorsModule } from '../tutors/tutors.module';
 import { SchedulesModule } from '../schedules/schedules.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { DemoClassesController } from './demo-classes.controller';
 import { DemoClassesService } from './demo-classes.service';
 import { DemoReminderService } from './demo-reminder.service';
 
 @Module({
-  imports: [StudentsModule, TutorsModule, SchedulesModule],
+  imports: [StudentsModule, TutorsModule, SchedulesModule, NotificationsModule],
   controllers: [DemoClassesController],
   providers: [DemoClassesService, DemoReminderService],
   exports: [DemoClassesService],

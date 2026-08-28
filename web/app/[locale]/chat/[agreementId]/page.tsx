@@ -1,9 +1,15 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import {
+  Alert,
+  Button,
+  ButtonLink,
+  Input,
+  PageHeader,
+} from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
@@ -120,27 +126,26 @@ export default function AgreementChatPage() {
   };
 
   return (
-    <>
-      <SiteHeader />
-      <main className="mx-auto flex max-w-2xl flex-col px-4 py-6" style={{ minHeight: '70vh' }}>
-        <div className="mb-3 flex items-center justify-between gap-2">
-          <div>
-            <h1 className="text-xl font-bold">{t('conversation')}</h1>
-            {meta && (
-              <p className="text-sm text-gray-600">
-                {meta.studentName} ↔ {meta.tutorName} · {meta.agreementStatus}
-              </p>
-            )}
-          </div>
-          <Link href={`/${locale}/chat`} className="text-sm text-blue-600">
-            {tc('back')}
-          </Link>
-        </div>
-        {error && <p className="mb-2 text-sm text-red-600">{error}</p>}
+    <AppFrame>
+      <main className="mx-auto flex min-h-[70vh] max-w-2xl flex-col px-4 py-6">
+        <PageHeader
+          title={t('conversation')}
+          description={
+            meta
+              ? `${meta.studentName} ↔ ${meta.tutorName} · ${meta.agreementStatus}`
+              : undefined
+          }
+          actions={
+            <ButtonLink href={`/${locale}/chat`} variant="link" size="sm">
+              {tc('back')}
+            </ButtonLink>
+          }
+        />
+        {error && <Alert className="mb-2">{error}</Alert>}
 
-        <div className="flex-1 space-y-2 overflow-y-auto rounded-lg border bg-white p-4">
+        <div className="flex-1 space-y-2 overflow-y-auto rounded-panel border border-cream-dark bg-surface p-4 shadow-panel">
           {!messages.length && (
-            <p className="text-sm text-gray-500">{t('noMessages')}</p>
+            <p className="text-sm text-ink-muted">{t('noMessages')}</p>
           )}
           {messages.map((m) => {
             const mine = m.senderUserId === userId;
@@ -150,15 +155,21 @@ export default function AgreementChatPage() {
                 className={`flex ${mine ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-                    mine ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'
+                  className={`max-w-[80%] rounded-panel px-3 py-2 text-sm ${
+                    mine
+                      ? 'bg-brand text-white'
+                      : 'bg-cream-dark/50 text-ink'
                   }`}
                 >
                   {!mine && (
                     <p className="mb-0.5 text-xs opacity-70">{m.senderName}</p>
                   )}
                   <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                  <p className={`mt-1 text-[10px] ${mine ? 'text-blue-100' : 'text-gray-400'}`}>
+                  <p
+                    className={`mt-1 text-[10px] ${
+                      mine ? 'text-brand-soft' : 'text-ink-muted'
+                    }`}
+                  >
                     {new Date(m.createdAt).toLocaleString()}
                   </p>
                 </div>
@@ -170,25 +181,21 @@ export default function AgreementChatPage() {
 
         {meta?.canSend ? (
           <form onSubmit={send} className="mt-3 flex gap-2">
-            <input
-              className="flex-1 rounded border px-3 py-2"
+            <Input
+              className="flex-1"
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={t('placeholder')}
               maxLength={2000}
               required
+              aria-label={t('placeholder')}
             />
-            <button
-              type="submit"
-              className="rounded bg-blue-600 px-4 py-2 text-white"
-            >
-              {t('send')}
-            </button>
+            <Button type="submit">{t('send')}</Button>
           </form>
         ) : (
-          <p className="mt-3 text-sm text-gray-600">{t('readOnly')}</p>
+          <p className="mt-3 text-sm text-ink-muted">{t('readOnly')}</p>
         )}
       </main>
-    </>
+    </AppFrame>
   );
 }

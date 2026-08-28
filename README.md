@@ -41,7 +41,7 @@ Edit `api/.env` and `web/.env.local` yourself using the comments in the samples.
 
 **Web (`web/.env.local`) needs only:**
 - `NEXT_PUBLIC_API_URL`
-- `NEXT_PUBLIC_PAYMENTS_MOCK` — `false` for Razorpay test/live; `true` for mock checkout
+- `NEXT_PUBLIC_PAYMENTS_MOCK` — mirror API `PAYMENTS_MOCK` (`true` local mock; `false` for Razorpay test/live)
 - `NEXT_PUBLIC_RAZORPAY_KEY_ID` — Key ID only (`rzp_test_…` or `rzp_live_…`)
 
 **API** secrets (JWT, SMTP, Cloudinary, Razorpay Key Secret, DB) go only in `api/.env` — see `api/.env.example`.
@@ -84,11 +84,14 @@ npm run dev
 - [x] Phase 3 — Engagement (demo, schedule, agreements)
 - [x] Phase 4 — Monetization (₹199 + commission, Razorpay/mock)
 - [x] Phase 5 — Trust & Operations (verification, ratings, disputes, admin metrics)
-- [x] Phase 6 — Code hardening (security, tests, docs; **production deploy deferred**)
+- [x] Phase 6 — Code hardening (security, tests, docs)
+- [x] Phase 7 — Go-live (**7A–7D code/docs done**; VPS/Nginx/backup + live soak **deferred**)
 
-See `docs/IMPLEMENTATION_CHECKLIST.md` and `docs/RUNBOOK.md` for tracking and ops.
+**Soft launch:** enable `SOFT_LAUNCH_INVITE_ONLY=true` + invite codes (see `docs/OPS_PLAYBOOK.md`). Soak: `docs/SOAK_CHECKLIST.md`.
 
-**Payments:** set `PAYMENTS_MOCK=true` (default in `.env.example`) for local checkout without Razorpay keys. For live sandbox, set `RAZORPAY_*` and `PAYMENTS_MOCK=false`. Email delivery uses **BullMQ** on Redis (`REDIS_URL`).
+See `docs/IMPLEMENTATION_CHECKLIST.md` and `docs/RUNBOOK.md` for Phases 0–6 tracking and ops.
+
+**Payments:** `.env.example` defaults to `PAYMENTS_MOCK=true` for local checkout without Razorpay keys (mirror `NEXT_PUBLIC_PAYMENTS_MOCK` on web). For live sandbox, set `RAZORPAY_*` and `PAYMENTS_MOCK=false` on **both** API and web. Checkout follows the API `mock` flag. Email delivery uses **BullMQ** on Redis (`REDIS_URL`).
 
 **Chat:** student↔tutor messaging unlocks only when an agreement is **ACTIVE** (`/chat`). Pre-agreement contact stays private; demos remain the trial path.
 

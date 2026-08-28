@@ -1,6 +1,12 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import {
+  Alert,
+  Card,
+  EmptyState,
+  PageHeader,
+} from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import Link from 'next/link';
@@ -42,43 +48,45 @@ export default function ChatListPage() {
   }, [locale, router]);
 
   return (
-    <>
-      <SiteHeader />
+    <AppFrame>
       <main className="mx-auto max-w-2xl px-4 py-10">
-        <h1 className="mb-4 text-2xl font-bold">{t('title')}</h1>
-        <p className="mb-6 text-sm text-gray-600">{t('unlockHint')}</p>
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-        {!rows.length && <p className="text-gray-600">{t('empty')}</p>}
-        <ul className="space-y-3">
-          {rows.map((r) => (
-            <li key={r.agreementId}>
-              <Link
-                href={`/${locale}/chat/${r.agreementId}`}
-                className="block rounded-lg bg-white p-4 shadow hover:bg-gray-50"
-              >
-                <p className="font-medium">
-                  {r.studentName} ↔ {r.tutorName}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {r.subject ?? ''} · {r.agreementStatus}
-                  {r.canSend ? ` · ${t('canSend')}` : ` · ${t('readOnly')}`}
-                </p>
-                {r.lastMessage && (
-                  <p className="mt-1 truncate text-sm text-gray-600">
-                    {r.lastMessage.body}
-                  </p>
-                )}
-              </Link>
-            </li>
-          ))}
-        </ul>
-        <Link
-          href={`/${locale}/dashboard/${role.toLowerCase()}`}
-          className="mt-6 inline-block text-blue-600"
-        >
-          {tc('back')}
-        </Link>
+        <PageHeader title={t('title')} description={t('unlockHint')} />
+        {error && <Alert className="mb-3">{error}</Alert>}
+        {!rows.length ? (
+          <EmptyState title={t('empty')} />
+        ) : (
+          <ul className="space-y-3">
+            {rows.map((r) => (
+              <li key={r.agreementId}>
+                <Link href={`/${locale}/chat/${r.agreementId}`} className="block">
+                  <Card className="p-4 transition hover:border-brand/40">
+                    <p className="font-medium text-ink">
+                      {r.studentName} ↔ {r.tutorName}
+                    </p>
+                    <p className="text-xs text-ink-muted">
+                      {r.subject ?? ''} · {r.agreementStatus}
+                      {r.canSend ? ` · ${t('canSend')}` : ` · ${t('readOnly')}`}
+                    </p>
+                    {r.lastMessage && (
+                      <p className="mt-1 truncate text-sm text-ink-muted">
+                        {r.lastMessage.body}
+                      </p>
+                    )}
+                  </Card>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+        {role && (
+          <Link
+            href={`/${locale}/dashboard/${role.toLowerCase()}`}
+            className="mt-6 inline-block text-sm font-medium text-brand hover:underline"
+          >
+            {tc('back')}
+          </Link>
+        )}
       </main>
-    </>
+    </AppFrame>
   );
 }

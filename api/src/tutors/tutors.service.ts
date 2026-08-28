@@ -10,7 +10,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../common/audit.service';
-import { geocodePincode } from '../common/geo';
+import { GeoService } from '../common/geo.service';
 import {
   RegistrationFeeChoiceDto,
   UpdateAvailabilityDto,
@@ -24,6 +24,7 @@ export class TutorsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly geo: GeoService,
   ) {}
 
   async ensureProfile(userId: string) {
@@ -43,6 +44,7 @@ export class TutorsService {
     experienceYears: number | null;
     photoUrl: string | null;
     teachingRadiusKm: number | null;
+    isVerified: boolean;
     subjects: unknown[];
     classes: unknown[];
     boards: unknown[];
@@ -57,6 +59,8 @@ export class TutorsService {
       boards: tutor.boards.length > 0,
       availability: tutor.availability.length > 0,
       location: tutor.teachingRadiusKm != null,
+      // Admin-approved ID docs — blocks fake profiles from search
+      verification: tutor.isVerified,
     };
     const done = Object.values(checks).filter(Boolean).length;
     const total = Object.keys(checks).length;
@@ -81,6 +85,13 @@ export class TutorsService {
       },
     });
     const completeness = this.completeness(tutor);
+    if (tutor.isDiscoverable !== completeness.isComplete) {
+      await this.prisma.tutor.update({
+        where: { id: tutor.id },
+        data: { isDiscoverable: completeness.isComplete },
+      });
+      tutor.isDiscoverable = completeness.isComplete;
+    }
     return {
       id: tutor.id,
       name: tutor.user.name,
@@ -112,7 +123,7 @@ export class TutorsService {
     };
   }
 
-  private async refreshDiscoverable(tutorId: string) {
+  async refreshDiscoverable(tutorId: string) {
     const tutor = await this.prisma.tutor.findUniqueOrThrow({
       where: { id: tutorId },
       include: {
@@ -211,22 +222,23 @@ export class TutorsService {
     ) {
       throw new BadRequestException('teachingRadiusKm must be 5, 10, or 20');
     }
-
-    let latitude = dto.latitude;
-    let longitude = dto.longitude;
-    if (dto.pincode && (latitude == null || longitude == null)) {
-      const geo = geocodePincode(dto.pincode);
-      latitude = geo.latitude;
-      longitude = geo.longitude;
+    if (!dto.pincode && (dto.latitude == null || dto.longitude == null)) {
+      throw new BadRequestException('pincode or latitude/longitude is required');
     }
+
+    const resolved = await this.geo.resolveCoordinates({
+      pincode: dto.pincode,
+      latitude: dto.latitude,
+      longitude: dto.longitude,
+    });
 
     await this.prisma.tutor.update({
       where: { id: tutor.id },
       data: {
         teachingRadiusKm: dto.teachingRadiusKm,
-        pincode: dto.pincode,
-        latitude,
-        longitude,
+        pincode: dto.pincode ?? tutor.pincode,
+        latitude: resolved.latitude,
+        longitude: resolved.longitude,
       },
     });
     await this.refreshDiscoverable(tutor.id);

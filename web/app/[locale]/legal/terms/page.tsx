@@ -1,25 +1,18 @@
-'use client';
+import type { Metadata } from 'next';
+import { LegalDocumentPage } from '@/components/LegalDocumentPage';
 
-import { SiteHeader } from '@/components/SiteHeader';
-import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+export const metadata: Metadata = {
+  title: 'Terms of Service',
+  description: 'TutorConnect India Terms of Service',
+};
 
 export default function TermsPage() {
-  const t = useTranslations('legal');
-  const tc = useTranslations('common');
-  const { locale } = useParams<{ locale: string }>();
-
   return (
-    <>
-      <SiteHeader />
-      <main className="mx-auto max-w-2xl px-4 py-10 prose prose-sm">
-        <h1 className="text-2xl font-bold">{t('termsTitle')}</h1>
-        <p className="mt-4 text-gray-700">{t('termsBody')}</p>
-        <Link href={`/${locale}`} className="mt-8 inline-block text-blue-600">
-          {tc('back')}
-        </Link>
-      </main>
-    </>
+    <LegalDocumentPage
+      titleKey="termsTitle"
+      introKey="termsIntro"
+      sectionsKey="termsSections"
+      updatedKey="termsUpdated"
+    />
   );
 }

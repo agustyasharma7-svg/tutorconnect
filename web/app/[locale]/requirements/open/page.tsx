@@ -1,9 +1,15 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import {
+  Alert,
+  ButtonLink,
+  Card,
+  EmptyState,
+  PageHeader,
+} from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -43,34 +49,38 @@ export default function OpenRequirementsPage() {
   }, [locale, router]);
 
   return (
-    <>
-      <SiteHeader />
+    <AppFrame>
       <main className="mx-auto max-w-3xl px-4 py-10">
-        <h1 className="mb-4 text-2xl font-bold">{t('openTitle')}</h1>
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-        <ul className="space-y-3">
-          {rows.map((r) => (
-            <li key={r.id} className="rounded-lg bg-white p-4 shadow">
-              <div className="flex justify-between gap-3">
-                <div>
-                  <p className="font-medium">
-                    {label(r.subject)} · {label(r.class)} · {label(r.board)}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    ₹{r.budgetMin}–₹{r.budgetMax} · {r.mode} · {r.status}
-                  </p>
-                </div>
-                <Link
-                  href={`/${locale}/requirements/${r.id}`}
-                  className="text-sm text-blue-600"
-                >
-                  {tc('apply')}
-                </Link>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <PageHeader title={t('openTitle')} />
+        {error && <Alert className="mb-3">{error}</Alert>}
+        {!rows.length && !error ? (
+          <EmptyState title={t('openTitle')} />
+        ) : (
+          <ul className="space-y-3">
+            {rows.map((r) => (
+              <li key={r.id}>
+                <Card className="flex justify-between gap-3 p-4">
+                  <div>
+                    <p className="font-medium text-ink">
+                      {label(r.subject)} · {label(r.class)} · {label(r.board)}
+                    </p>
+                    <p className="text-sm text-ink-muted">
+                      ₹{r.budgetMin}–₹{r.budgetMax} · {r.mode} · {r.status}
+                    </p>
+                  </div>
+                  <ButtonLink
+                    href={`/${locale}/requirements/${r.id}`}
+                    variant="link"
+                    size="sm"
+                  >
+                    {tc('apply')}
+                  </ButtonLink>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
       </main>
-    </>
+    </AppFrame>
   );
 }

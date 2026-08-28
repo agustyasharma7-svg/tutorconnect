@@ -94,6 +94,12 @@ export class AdminController {
     return this.commissions.waive(user.sub, id, dto);
   }
 
+  /** Recover missing commission rows for ACTIVE agreements (ops backfill). */
+  @Post('commissions/regenerate/:agreementId')
+  regenerateForAgreement(@Param('agreementId') agreementId: string) {
+    return this.commissions.generateForAgreement(agreementId);
+  }
+
   @Get('metrics/users')
   async metricsUsers() {
     const since = new Date();

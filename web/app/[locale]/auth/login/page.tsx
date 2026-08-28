@@ -1,6 +1,14 @@
 'use client';
 
 import { SiteHeader } from '@/components/SiteHeader';
+import {
+  Alert,
+  Button,
+  Card,
+  FormField,
+  Input,
+  PageHeader,
+} from '@/components/ui';
 import { api } from '@/lib/api';
 import { dashboardPath, saveAuth } from '@/lib/auth';
 import { AuthUser } from '@/lib/types';
@@ -66,67 +74,73 @@ export default function LoginPage() {
     <>
       <SiteHeader />
       <main className="mx-auto max-w-md px-4 py-12">
-        <h1 className="mb-6 text-2xl font-bold">{t('loginTitle')}</h1>
-        <div className="mb-4 flex gap-2 text-sm">
-          <button
+        <PageHeader title={t('loginTitle')} />
+        <div className="mb-4 flex gap-2 text-sm" role="tablist">
+          <Button
             type="button"
+            size="sm"
+            variant={mode === 'otp' ? 'primary' : 'secondary'}
             onClick={() => setMode('otp')}
-            className={`rounded px-3 py-1 ${mode === 'otp' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
+            aria-selected={mode === 'otp'}
           >
             {t('loginOtp')}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            size="sm"
+            variant={mode === 'password' ? 'primary' : 'secondary'}
             onClick={() => setMode('password')}
-            className={`rounded px-3 py-1 ${mode === 'password' ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}
+            aria-selected={mode === 'password'}
           >
             {t('loginPassword')}
-          </button>
+          </Button>
         </div>
-        <form
-          onSubmit={mode === 'otp' ? handleOtp : handlePassword}
-          className="space-y-4 rounded-lg bg-white p-6 shadow"
-        >
-          <div>
-            <label className="mb-1 block text-sm font-medium">{tc('email')}</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded border px-3 py-2"
-            />
-          </div>
-          {mode === 'password' && (
-            <div>
-              <label className="mb-1 block text-sm font-medium">{tc('password')}</label>
-              <input
-                type="password"
-                required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded border px-3 py-2"
-              />
-            </div>
-          )}
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded bg-blue-600 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+        <Card>
+          <form
+            onSubmit={mode === 'otp' ? handleOtp : handlePassword}
+            className="space-y-4"
           >
-            {loading ? tc('loading') : mode === 'otp' ? t('sendOtp') : t('login')}
-          </button>
-        </form>
-        <p className="mt-4 text-center text-sm">
-          <Link href={`/${locale}/auth/forgot-password`} className="text-blue-600">
+            <FormField label={tc('email')} id="login-email">
+              {(id) => (
+                <Input
+                  id={id}
+                  type="email"
+                  required
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              )}
+            </FormField>
+            {mode === 'password' && (
+              <FormField label={tc('password')} id="login-password">
+                {(id) => (
+                  <Input
+                    id={id}
+                    type="password"
+                    required
+                    minLength={8}
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                )}
+              </FormField>
+            )}
+            {error && <Alert>{error}</Alert>}
+            <Button type="submit" disabled={loading} fullWidth>
+              {loading ? tc('loading') : mode === 'otp' ? t('sendOtp') : t('login')}
+            </Button>
+          </form>
+        </Card>
+        <p className="mt-4 text-center text-sm text-ink-muted">
+          <Link href={`/${locale}/auth/forgot-password`} className="text-brand hover:underline">
             {t('forgotPassword')}
           </Link>
         </p>
-        <p className="mt-2 text-center text-sm">
+        <p className="mt-2 text-center text-sm text-ink-muted">
           {t('noAccount')}{' '}
-          <Link href={`/${locale}/auth/register/student`} className="text-blue-600">
+          <Link href={`/${locale}/auth/register/student`} className="text-brand hover:underline">
             {t('registerStudent')}
           </Link>
         </p>

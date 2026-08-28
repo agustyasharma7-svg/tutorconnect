@@ -1,23 +1,26 @@
 # TutorConnect India — Implementation Checklist
 
-**Version:** 1.7  
-**Updated:** 2 Aug 2026  
-**Sources:** `FUNCTIONALITY.md` v1.5 · `IMPLEMENTATION_PLAN.md` v1.5  
-**Timeline:** ~21 weeks (Phases 0–6)
+**Version:** 1.8  
+**Updated:** 27 Aug 2026  
+**Sources:** `FUNCTIONALITY.md` v1.5 · `IMPLEMENTATION_PLAN.md` v1.5 · `GO_LIVE_IMPLEMENTATION_PLAN.md` v1.0  
+**Timeline:** ~21 weeks (Phases 0–6) + ~3–4 weeks Phase 7 go-live
+
+> **Phase 7 (go-live):** Tracked separately in [`GO_LIVE_IMPLEMENTATION_PLAN.md`](./GO_LIVE_IMPLEMENTATION_PLAN.md) and [`GO_LIVE_CHECKLIST.md`](./GO_LIVE_CHECKLIST.md). Start at **7A.1**. Final Launch Checklist L1–L12 closes in **7D.5**.
 
 ---
 
-## Progress Snapshot (as of 2 Aug 2026)
+## Progress Snapshot (as of 27 Aug 2026)
 
 | Phase | Status | Notes |
 |---|---|---|
-| **0 — Foundation** | Code complete | Auth, OTP/SMTP, JWT, i18n, Docker DB. Not done: VPS, Nginx/SSL, Sentry |
+| **0 — Foundation** | Code complete | Auth, OTP/SMTP, JWT, i18n, Docker DB. Not done: VPS, Nginx/SSL, Sentry → Phase 7B |
 | **1 — Core Profiles** | Code complete | Student/tutor profiles, catalog, Cloudinary photos, password auth, admin users |
 | **2 — Marketplace** | **Complete** | Free requirements, PostGIS search/match, apply/invite/shortlist, SMTP alerts |
 | **3 — Engagement** | **Complete** | Demo + reminder cron, exceptions, buffer UI, agreements + Cloudinary PDF |
 | **4 — Monetization** | **Complete** | ₹199 + commission, Razorpay/mock, BullMQ email, admin waive, overdue restriction |
 | **5 — Trust & Ops** | **Complete** | Verification badge, ratings, disputes (Cloudinary evidence), admin metrics/audit |
-| **6 — Hardening** | **Code complete (deploy deferred)** | Helmet/CSP, refresh rotation, Jest + Playwright + k6 smoke, OWASP/runbook/legal stubs |
+| **6 — Hardening** | **Code complete** | Helmet/CSP, refresh rotation, Jest + Playwright + k6 smoke, OWASP/runbook/legal stubs |
+| **7 — Go-live** | **7A–7D code/docs done** | Hosting + live soak deferred. See `GO_LIVE_CHECKLIST.md` |
 
 ### Phases 2–5 at a glance (what shipped)
 
@@ -90,7 +93,7 @@
 | 0.1.8 | FE | Tailwind CSS setup (shadcn/ui deferred) | [x] |
 | 0.1.9 | FE | next-intl setup — `en` + `hi` locale routing | [x] |
 | 0.1.10 | BE | OpenAPI / Swagger (`/api/docs`) | [x] |
-| 0.1.11 | BE | Sentry error monitoring integration | [ ] |
+| 0.1.11 | BE | Sentry error monitoring integration | [x] |
 
 ## 0.2 Database — Core Auth Schema
 
@@ -718,29 +721,33 @@
 - [ ] Recurring monthly commission
 - [ ] Student posting fee / student payments
 - [ ] Premium tutor tiers
-- [ ] CI/CD pipeline (manual deploy only)
+- [ ] CI/CD pipeline (manual deploy only) — **Phase 7C.1 adds minimal GitHub Actions (test/audit); full CD still out of scope**
 - [ ] Native iOS/Android apps
 - [ ] Video calls in-app
 - [ ] Session attendance logging (occupy/release only)
+
+> Go-live work (security, staging, soft launch) is **in scope for Phase 7** — see [`GO_LIVE_CHECKLIST.md`](./GO_LIVE_CHECKLIST.md).
 
 ---
 
 # Final MVP Launch Checklist
 
-| # | Item | Status |
-|---|---|---|
-| L1 | All Phase 0–6 exit criteria met | [ ] |
-| L2 | All 15 modules functional | [ ] |
-| L3 | Tutor pays only registration + commission | [ ] |
-| L4 | GST inclusive on all tutor fees | [ ] |
-| L5 | Email OTP + all notifications via SMTP | [ ] |
-| L6 | Demo class works; pre-agreement no chat (post-ACTIVE chat OK) | [x] |
-| L7 | Slot occupy/release + 15 min buffer | [ ] |
-| L8 | Hindi + English on all screens | [ ] |
-| L9 | Razorpay live + SMTP production tested | [ ] |
-| L10 | 50 verified tutors onboarded | [ ] |
-| L11 | Legal documents published | [ ] |
-| L12 | Runbook and rollback plan ready | [ ] |
+Close during **Phase 7D.5** (see [`GO_LIVE_CHECKLIST.md`](./GO_LIVE_CHECKLIST.md)). Do not treat as done before 7A + 7B exit.
+
+| # | Item | Status | Phase 7 link |
+|---|---|---|---|
+| L1 | All Phase 0–6 exit criteria met | [x] | Code complete; infra soak deferred |
+| L2 | All 15 modules functional | [x] | Re-verify during soak |
+| L3 | Tutor pays only registration + commission | [x] | Shipped |
+| L4 | GST inclusive on all tutor fees | [x] | Shipped |
+| L5 | Email OTP + all notifications via SMTP | [~] | Needs live SMTP on host |
+| L6 | Demo class works; pre-agreement no chat (post-ACTIVE chat OK) | [x] | Shipped |
+| L7 | Slot occupy/release + 15 min buffer | [x] | Shipped |
+| L8 | Hindi + English on all screens | [x] | Shipped |
+| L9 | Razorpay live + SMTP production tested | [~] | Deferred with staging host |
+| L10 | 50 verified tutors onboarded | [~] | Invite gate ready; cohort is ops |
+| L11 | Legal documents published | [x] | 7D.1 |
+| L12 | Runbook and rollback plan ready | [x] | + OPS_PLAYBOOK + SOAK_CHECKLIST |
 
 ---
 

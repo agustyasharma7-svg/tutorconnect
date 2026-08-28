@@ -1,3 +1,4 @@
+import { withSentryConfig } from '@sentry/nextjs';
 import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin('./i18n.ts');
@@ -14,6 +15,18 @@ const apiOrigin = (() => {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Enable Next.js instrumentation hook (Sentry server/edge init).
+  experimental: {
+    instrumentationHook: true,
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/api/v1/:path*',
+        destination: `${apiOrigin}/api/v1/:path*`,
+      },
+    ];
+  },
   async headers() {
     return [
       {
@@ -24,7 +37,7 @@ const nextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=()',
+            value: 'camera=(), microphone=(), geolocation=(self)',
           },
           {
             key: 'Content-Security-Policy',
@@ -34,7 +47,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https://res.cloudinary.com",
               "font-src 'self' data:",
-              `connect-src 'self' ${apiOrigin} https://*.razorpay.com https://api.razorpay.com`,
+              `connect-src 'self' ${apiOrigin} https://*.razorpay.com https://api.razorpay.com https://*.ingest.sentry.io https://*.sentry.io`,
               "frame-src 'self' https://api.razorpay.com https://checkout.razorpay.com",
               "object-src 'none'",
               "base-uri 'self'",
@@ -47,4 +60,16 @@ const nextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+export default withSentryConfig(withNextIntl(nextConfig), {
+  silent: true,
+  widenClientFileUpload: false,
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+  // Skip source-map upload unless SENTRY_AUTH_TOKEN is set in CI later.
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+  },
+});

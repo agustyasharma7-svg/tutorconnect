@@ -41,7 +41,7 @@ export async function startCheckout(
     body: JSON.stringify(body),
   });
 
-  if (order.mock || process.env.NEXT_PUBLIC_PAYMENTS_MOCK === 'true') {
+  if (order.mock) {
     const paid = await apiWithAuth<{ id: string }>('/payments/mock-complete', token, {
       method: 'POST',
       body: JSON.stringify({ paymentId: order.paymentId }),

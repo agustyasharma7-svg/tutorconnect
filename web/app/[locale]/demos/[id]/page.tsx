@@ -1,9 +1,16 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import {
+  Alert,
+  Button,
+  ButtonLink,
+  Card,
+  PageHeader,
+  Spinner,
+} from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -57,63 +64,72 @@ export default function DemoDetailPage() {
     }
   };
 
-  if (!demo) return <p className="p-8">{tc('loading')}</p>;
+  if (!demo) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Spinner label={tc('loading')} />
+      </div>
+    );
+  }
 
   return (
-    <>
-      <SiteHeader />
+    <AppFrame>
       <main className="mx-auto max-w-2xl px-4 py-10">
-        <Link href={`/${locale}/demos`} className="text-sm text-blue-600">
-          {tc('back')}
-        </Link>
-        <h1 className="mt-4 text-2xl font-bold">{t('detail')}</h1>
-        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-        <div className="mt-4 space-y-2 rounded-lg bg-white p-6 shadow">
-          <p>
+        <PageHeader
+          title={t('detail')}
+          actions={
+            <ButtonLink href={`/${locale}/demos`} variant="link" size="sm">
+              {tc('back')}
+            </ButtonLink>
+          }
+        />
+        {error && <Alert className="mb-3">{error}</Alert>}
+        <Card className="space-y-2">
+          <p className="text-ink">
             {demo.tutorName} · {demo.studentName}
           </p>
-          <p>{new Date(demo.scheduledAt).toLocaleString()} · {demo.durationMins} min</p>
-          <p>
+          <p className="text-ink">
+            {new Date(demo.scheduledAt).toLocaleString()} · {demo.durationMins}{' '}
+            min
+          </p>
+          <p className="text-ink">
             {demo.mode} · {demo.status}
           </p>
-          <p className="text-sm text-gray-500">{tm('contactHidden')}</p>
-          <div className="rounded bg-gray-50 p-3 text-sm">
-            <p className="font-medium">{t('join')}</p>
-            <p>{demo.joinDetails}</p>
+          <p className="text-sm text-ink-muted">{tm('contactHidden')}</p>
+          <div className="rounded-control bg-cream p-3 text-sm">
+            <p className="font-medium text-ink">{t('join')}</p>
+            <p className="text-ink-muted">{demo.joinDetails}</p>
           </div>
-        </div>
+        </Card>
         {demo.status === 'SCHEDULED' && (
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button
-              type="button"
-              className="rounded bg-blue-600 px-4 py-2 text-white"
-              onClick={() => setStatus('COMPLETED')}
-            >
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button type="button" onClick={() => setStatus('COMPLETED')}>
               {t('complete')}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="rounded border px-4 py-2"
+              variant="secondary"
               onClick={() => setStatus('CANCELLED')}
             >
               {t('cancelDemo')}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="rounded border border-amber-600 px-4 py-2 text-amber-800"
+              variant="secondary"
+              className="border-amber-600 text-amber-800"
               onClick={() => setStatus('NO_SHOW')}
             >
               {t('noShow')}
-            </button>
-            <Link
+            </Button>
+            <ButtonLink
               href={`/${locale}/agreements?matchId=${demo.matchId}`}
-              className="rounded border px-4 py-2"
+              variant="secondary"
             >
-              Agreement
-            </Link>
+              {t('agreement')}
+            </ButtonLink>
           </div>
         )}
       </main>
-    </>
+    </AppFrame>
   );
 }

@@ -26,6 +26,7 @@ import { RatingsModule } from './ratings/ratings.module';
 import { DisputesModule } from './disputes/disputes.module';
 import { ChatModule } from './chat/chat.module';
 import { AppController } from './app.controller';
+import { CsrfGuard } from './common/guards/csrf.guard';
 
 @Module({
   imports: [
@@ -66,6 +67,10 @@ import { AppController } from './app.controller';
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: CsrfGuard,
     },
   ],
 })

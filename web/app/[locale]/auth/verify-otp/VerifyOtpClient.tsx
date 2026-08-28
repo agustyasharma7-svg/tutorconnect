@@ -1,6 +1,14 @@
 'use client';
 
 import { SiteHeader } from '@/components/SiteHeader';
+import {
+  Alert,
+  Button,
+  Card,
+  FormField,
+  Input,
+  PageHeader,
+} from '@/components/ui';
 import { api } from '@/lib/api';
 import { dashboardPath, saveAuth } from '@/lib/auth';
 import { AuthUser } from '@/lib/types';
@@ -49,32 +57,33 @@ export default function VerifyOtpClient() {
     <>
       <SiteHeader />
       <main className="mx-auto max-w-md px-4 py-12">
-        <h1 className="mb-2 text-2xl font-bold">{t('verifyOtpTitle')}</h1>
-        <p className="mb-6 text-sm text-gray-600">{email}</p>
-        <form onSubmit={handleVerify} className="space-y-4 rounded-lg bg-white p-6 shadow">
-          <div>
-            <label className="mb-1 block text-sm font-medium">{t('otp')}</label>
-            <input
-              type="text"
-              required
-              pattern="\d{6}"
-              maxLength={6}
-              value={otp}
-              onChange={(e) => setOtp(e.target.value)}
-              className="w-full rounded border px-3 py-2 tracking-widest"
-            />
-          </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded bg-blue-600 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? tc('loading') : t('verifyOtp')}
-          </button>
-        </form>
+        <PageHeader title={t('verifyOtpTitle')} description={email} />
+        <Card>
+          <form onSubmit={handleVerify} className="space-y-4">
+            <FormField label={t('otp')} id="verify-otp">
+              {(id) => (
+                <Input
+                  id={id}
+                  type="text"
+                  required
+                  pattern="\d{6}"
+                  maxLength={6}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  className="tracking-widest"
+                />
+              )}
+            </FormField>
+            {error && <Alert>{error}</Alert>}
+            <Button type="submit" disabled={loading} fullWidth>
+              {loading ? tc('loading') : t('verifyOtp')}
+            </Button>
+          </form>
+        </Card>
         <p className="mt-4 text-center text-sm">
-          <Link href={`/${locale}/auth/login`} className="text-blue-600">
+          <Link href={`/${locale}/auth/login`} className="text-brand hover:underline">
             {tc('back')}
           </Link>
         </p>

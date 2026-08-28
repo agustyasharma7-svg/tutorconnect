@@ -4,6 +4,10 @@ test.describe('Phase 6 smoke', () => {
   test('home loads and language switch hi ↔ en', async ({ page }) => {
     await page.goto('/en');
     await expect(page.getByText(/TutorConnect/i).first()).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /Tuition, without the tension/i }),
+    ).toBeVisible();
+    await expect(page.getByRole('link', { name: /Help/i }).first()).toBeVisible();
 
     await page.goto('/hi');
     await expect(page.locator('body')).toBeVisible();
@@ -12,6 +16,14 @@ test.describe('Phase 6 smoke', () => {
 
     await page.goto('/en');
     await expect(page).toHaveURL(/\/en/);
+  });
+
+  test('help desk is reachable from home', async ({ page }) => {
+    await page.goto('/en');
+    await page.getByRole('link', { name: /^Help$/ }).first().click();
+    await expect(page).toHaveURL(/\/en\/help/);
+    await expect(page.getByRole('heading', { name: /We're here/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Common questions/i })).toBeVisible();
   });
 
   test('login page reachable', async ({ page }) => {

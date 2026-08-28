@@ -1,10 +1,17 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import {
+  Alert,
+  Button,
+  ButtonLink,
+  Card,
+  PageHeader,
+  Spinner,
+} from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import { startCheckout } from '@/lib/payments';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -50,38 +57,48 @@ export default function CommissionCheckoutPage() {
     }
   };
 
+  if (!commission && !error) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Spinner label={tc('loading')} />
+      </div>
+    );
+  }
+
   return (
-    <>
-      <SiteHeader />
+    <AppFrame>
       <main className="mx-auto max-w-lg px-4 py-10">
-        <h1 className="mb-2 text-2xl font-bold">{t('commissionCheckout')}</h1>
+        <PageHeader title={t('commissionCheckout')} />
         {commission && (
-          <>
-            <ul className="mb-4 space-y-1 text-sm">
+          <Card className="mb-4">
+            <ul className="mb-4 space-y-1 text-sm text-ink-muted">
               {commission.lineItems.map((li) => (
                 <li key={li.label}>
                   {li.label}: ₹{li.gross}
                 </li>
               ))}
             </ul>
-            <p className="mb-4 text-lg font-semibold">
+            <p className="text-lg font-semibold text-ink">
               {t('totalDue')}: ₹{commission.grossAmount} {t('inclGst')}
             </p>
-          </>
+          </Card>
         )}
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-        <button
+        {error && <Alert className="mb-3">{error}</Alert>}
+        <Button
           type="button"
           disabled={loading || !token || !commission}
           onClick={pay}
-          className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
         >
           {loading ? tc('loading') : t('payNow')}
-        </button>
-        <Link href={`/${locale}/commissions`} className="mt-6 block text-blue-600 underline">
+        </Button>
+        <ButtonLink
+          href={`/${locale}/commissions`}
+          variant="link"
+          className="mt-6"
+        >
           {tc('back')}
-        </Link>
+        </ButtonLink>
       </main>
-    </>
+    </AppFrame>
   );
 }

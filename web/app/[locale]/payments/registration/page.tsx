@@ -1,12 +1,18 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import {
+  Alert,
+  Button,
+  ButtonLink,
+  Card,
+  PageHeader,
+} from '@/components/ui';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
-import Link from 'next/link';
+import { startCheckout } from '@/lib/payments';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
-import { startCheckout } from '@/lib/payments';
 
 export default function RegistrationCheckoutPage() {
   const t = useTranslations('payments');
@@ -39,26 +45,35 @@ export default function RegistrationCheckoutPage() {
   };
 
   return (
-    <>
-      <SiteHeader />
+    <AppFrame>
       <main className="mx-auto max-w-lg px-4 py-10">
-        <h1 className="mb-2 text-2xl font-bold">{t('registrationTitle')}</h1>
-        <p className="mb-6 text-gray-600">{t('registrationBlurb')}</p>
-        <p className="mb-4 text-lg font-semibold">₹199 {t('inclGst')}</p>
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-        <button
-          type="button"
-          disabled={loading || !token}
-          onClick={pay}
-          className="rounded bg-blue-600 px-4 py-2 text-white disabled:opacity-50"
+        <PageHeader
+          title={t('registrationTitle')}
+          description={t('registrationBlurb')}
+        />
+        <Card>
+          <p className="text-lg font-semibold text-ink">
+            ₹199 {t('inclGst')}
+          </p>
+          {error && <Alert className="mt-3">{error}</Alert>}
+          <Button
+            type="button"
+            className="mt-4"
+            disabled={loading || !token}
+            onClick={pay}
+          >
+            {loading ? tc('loading') : t('payNow')}
+          </Button>
+          <p className="mt-4 text-sm text-ink-muted">{t('tutorOnly')}</p>
+        </Card>
+        <ButtonLink
+          href={`/${locale}/dashboard/tutor`}
+          variant="link"
+          className="mt-6"
         >
-          {loading ? tc('loading') : t('payNow')}
-        </button>
-        <p className="mt-4 text-sm text-gray-500">{t('tutorOnly')}</p>
-        <Link href={`/${locale}/dashboard/tutor`} className="mt-6 block text-blue-600 underline">
           {tc('back')}
-        </Link>
+        </ButtonLink>
       </main>
-    </>
+    </AppFrame>
   );
 }

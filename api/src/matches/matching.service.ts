@@ -15,7 +15,8 @@ import { AuditService } from '../common/audit.service';
 import { MailService } from '../mail/mail.service';
 import { StudentsService } from '../students/students.service';
 import { TutorsService } from '../tutors/tutors.service';
-import { geocodePincode, distancesFromPoint, distancesFromRequirement } from '../common/geo';
+import { distancesFromPoint, distancesFromRequirement } from '../common/geo';
+import { GeoService } from '../common/geo.service';
 import {
   ApplyMatchDto,
   InviteMatchDto,
@@ -33,6 +34,7 @@ export class MatchingService {
     private readonly mail: MailService,
     private readonly students: StudentsService,
     private readonly tutors: TutorsService,
+    private readonly geo: GeoService,
   ) {}
 
   private publicTutorCard(tutor: {
@@ -193,7 +195,22 @@ export class MatchingService {
   async searchTutors(query: SearchTutorsQueryDto) {
     const needsGeo = query.mode === 'OFFLINE' || query.mode === 'BOTH';
     let origin: { latitude: number; longitude: number } | null = null;
-    if (query.pincode) origin = geocodePincode(query.pincode);
+    if (
+      query.latitude != null &&
+      query.longitude != null
+    ) {
+      origin = await this.geo
+        .resolveCoordinates({
+          latitude: query.latitude,
+          longitude: query.longitude,
+          pincode: query.pincode,
+        })
+        .then((c) => ({ latitude: c.latitude, longitude: c.longitude }));
+    } else if (query.pincode) {
+      origin = await this.geo
+        .resolveCoordinates({ pincode: query.pincode })
+        .then((c) => ({ latitude: c.latitude, longitude: c.longitude }));
+    }
 
     const tutors = await this.prisma.tutor.findMany({
       where: {

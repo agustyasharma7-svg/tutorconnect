@@ -1,9 +1,18 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import {
+  Alert,
+  Button,
+  ButtonLink,
+  Card,
+  EmptyState,
+  FormField,
+  PageHeader,
+  Textarea,
+} from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -12,7 +21,13 @@ type Row = {
   tutorId: string;
   name: string;
   email: string;
-  documents: { id: string; type: string; fileName: string; piiMasked?: string; fileUrl?: string }[];
+  documents: {
+    id: string;
+    type: string;
+    fileName: string;
+    piiMasked?: string;
+    fileUrl?: string;
+  }[];
 };
 
 export default function AdminVerificationPage() {
@@ -86,103 +101,118 @@ export default function AdminVerificationPage() {
   };
 
   return (
-    <>
-      <SiteHeader />
+    <AppFrame>
       <main className="mx-auto max-w-4xl px-4 py-10">
-        <div className="mb-4 flex justify-between">
-          <h1 className="text-2xl font-bold">{t('verificationQueue')}</h1>
-          <Link href={`/${locale}/dashboard/admin`} className="text-blue-600">
-            {tc('back')}
-          </Link>
-        </div>
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-        {!rows.length && <p className="text-gray-600">{t('verificationEmpty')}</p>}
-        <ul className="space-y-4">
-          {rows.map((r) => (
-            <li key={r.tutorId} className="rounded-lg bg-white p-4 shadow">
-              <p className="font-medium">
-                {r.name} · {r.email}
-              </p>
-              <ul className="mt-2 space-y-1 text-sm">
-                {r.documents.map((d) => (
-                  <li key={d.id}>
-                    {d.type} · {d.fileName} · {d.piiMasked}
-                    <button
+        <PageHeader
+          title={t('verificationQueue')}
+          actions={
+            <ButtonLink
+              href={`/${locale}/dashboard/admin`}
+              variant="link"
+              size="sm"
+            >
+              {tc('back')}
+            </ButtonLink>
+          }
+        />
+        {error && <Alert className="mb-3">{error}</Alert>}
+        {!rows.length ? (
+          <EmptyState title={t('verificationEmpty')} />
+        ) : (
+          <ul className="space-y-4">
+            {rows.map((r) => (
+              <li key={r.tutorId}>
+                <Card>
+                  <p className="font-medium text-ink">
+                    {r.name} · {r.email}
+                  </p>
+                  <ul className="mt-2 space-y-1 text-sm text-ink-muted">
+                    {r.documents.map((d) => (
+                      <li key={d.id}>
+                        {d.type} · {d.fileName} · {d.piiMasked}
+                        <Button
+                          type="button"
+                          variant="link"
+                          size="sm"
+                          className="ml-2"
+                          onClick={() => viewDoc(d.id)}
+                        >
+                          {t('viewDoc')}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-3 flex gap-2">
+                    <Button
                       type="button"
-                      className="ml-2 text-blue-600 underline"
-                      onClick={() => viewDoc(d.id)}
+                      size="sm"
+                      onClick={() => approve(r.tutorId)}
                     >
-                      {t('viewDoc')}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-3 flex gap-2">
-                <button
-                  type="button"
-                  className="rounded bg-blue-600 px-3 py-1.5 text-sm text-white"
-                  onClick={() => approve(r.tutorId)}
-                >
-                  {t('approve')}
-                </button>
-                <button
-                  type="button"
-                  className="rounded border px-3 py-1.5 text-sm"
-                  onClick={() => {
-                    setRejectId(r.tutorId);
-                    setReason('');
-                  }}
-                >
-                  {t('reject')}
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
+                      {t('approve')}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        setRejectId(r.tutorId);
+                        setReason('');
+                      }}
+                    >
+                      {t('reject')}
+                    </Button>
+                  </div>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {viewer && (
-          <div className="mt-6 rounded border bg-white p-4">
-            <p className="font-medium">{viewer.fileName}</p>
-            <p className="text-sm text-gray-600">
+          <Card className="mt-6">
+            <p className="font-medium text-ink">{viewer.fileName}</p>
+            <p className="text-sm text-ink-muted">
               {t('maskedId')}: {viewer.piiMasked}
             </p>
-            <a
-              href={viewer.fileUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-2 inline-block text-blue-600 underline"
-            >
-              {t('openFile')}
-            </a>
-            <button
-              type="button"
-              className="ml-4 text-sm"
-              onClick={() => setViewer(null)}
-            >
-              {tc('cancel')}
-            </button>
-          </div>
+            <div className="mt-2 flex flex-wrap gap-3">
+              <a
+                href={viewer.fileUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="text-sm font-medium text-brand hover:underline"
+              >
+                {t('openFile')}
+              </a>
+              <Button
+                type="button"
+                variant="link"
+                size="sm"
+                onClick={() => setViewer(null)}
+              >
+                {tc('cancel')}
+              </Button>
+            </div>
+          </Card>
         )}
 
         {rejectId && (
-          <div className="mt-6 space-y-2 rounded border bg-white p-4">
-            <textarea
-              className="w-full rounded border px-3 py-2"
-              rows={3}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder={t('rejectReason')}
-            />
-            <button
-              type="button"
-              className="rounded bg-red-600 px-4 py-2 text-white"
-              onClick={reject}
-            >
+          <Card className="mt-6 space-y-3">
+            <FormField label={t('rejectReason')} id="admin-reject-reason">
+              {(id) => (
+                <Textarea
+                  id={id}
+                  rows={3}
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                />
+              )}
+            </FormField>
+            <Button type="button" variant="danger" onClick={reject}>
               {t('confirmReject')}
-            </button>
-          </div>
+            </Button>
+          </Card>
         )}
       </main>
-    </>
+    </AppFrame>
   );
 }

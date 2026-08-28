@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  AgreementStatus,
   CommissionStatus,
   Prisma,
   RegistrationFeeStatus,
@@ -49,6 +50,15 @@ export class CommissionsService {
       },
     });
     if (!agreement) return null;
+
+    if (
+      agreement.status !== AgreementStatus.ACTIVE &&
+      agreement.status !== AgreementStatus.COMPLETED
+    ) {
+      throw new BadRequestException(
+        `Commission can only be generated for ACTIVE agreements (got ${agreement.status})`,
+      );
+    }
 
     const tutorId = agreement.match.tutorId;
     const studentId = agreement.match.requirement.studentId;
@@ -231,20 +241,22 @@ export class CommissionsService {
     const c = await this.prisma.commission.findUnique({
       where: { id: commissionId },
     });
-    if (!c || c.status === CommissionStatus.PAID) return c;
+    if (!c) return c;
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.commission.update({
-        where: { id: commissionId },
-        data: { status: CommissionStatus.PAID, paidAt: new Date() },
-      });
-      if (c.registrationGross > 0) {
-        await tx.tutor.update({
-          where: { id: c.tutorId },
-          data: { registrationFeeStatus: RegistrationFeeStatus.PAID },
+    if (c.status !== CommissionStatus.PAID) {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.commission.update({
+          where: { id: commissionId },
+          data: { status: CommissionStatus.PAID, paidAt: new Date() },
         });
-      }
-    });
+        if (c.registrationGross > 0) {
+          await tx.tutor.update({
+            where: { id: c.tutorId },
+            data: { registrationFeeStatus: RegistrationFeeStatus.PAID },
+          });
+        }
+      });
+    }
 
     await this.liftPaymentRestrictionIfClear(c.tutorId);
     return this.prisma.commission.findUnique({ where: { id: commissionId } });
@@ -336,7 +348,7 @@ export class CommissionsService {
       },
     });
     if (!tutor) return;
-    // Re-enable discoverability only if profile looks complete
+    // Re-enable discoverability only if profile is complete (incl. admin verification)
     const complete =
       !!tutor.bio &&
       tutor.experienceYears != null &&
@@ -345,7 +357,8 @@ export class CommissionsService {
       tutor.classes.length > 0 &&
       tutor.boards.length > 0 &&
       tutor.availability.length > 0 &&
-      tutor.teachingRadiusKm != null;
+      tutor.teachingRadiusKm != null &&
+      tutor.isVerified;
     if (complete) {
       await this.prisma.tutor.update({
         where: { id: tutorId },

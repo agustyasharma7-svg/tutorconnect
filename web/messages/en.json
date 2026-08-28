@@ -1,6 +1,7 @@
 {
   "common": {
     "appName": "TutorConnect India",
+    "brand": "TutorConnect",
     "tagline": "Verified tutor marketplace",
     "email": "Email",
     "mobile": "Mobile",
@@ -26,7 +27,20 @@
     "view": "View",
     "status": "Status",
     "budget": "Budget",
-    "both": "Both"
+    "both": "Both",
+    "navHow": "How it works",
+    "navWhy": "Why us",
+    "navHelp": "Help",
+    "navFind": "Find tutors",
+    "getStarted": "Get started",
+    "navDashboard": "Dashboard",
+    "menu": "Menu",
+    "contact": "Contact",
+    "footerTagline": "Verified tutors for India — online and at home. Post free, try a demo, sign once.",
+    "footerProduct": "Product",
+    "footerJoin": "Join",
+    "footerLegal": "Legal",
+    "footerRights": "© {year} TutorConnect India. All rights reserved."
   },
   "auth": {
     "login": "Login",
@@ -42,6 +56,8 @@
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?",
     "qualification": "Qualification",
+    "inviteCode": "Invite code",
+    "inviteOnlyHint": "Soft launch is invite-only. Enter your invite code (or use an allowlisted email).",
     "registerStudentTitle": "Create student account",
     "registerTutorTitle": "Create tutor account",
     "forgotPassword": "Forgot password?",
@@ -55,6 +71,7 @@
     "admin": "Admin Dashboard",
     "welcome": "Welcome, {name}",
     "phase1": "Complete your profile to get started.",
+    "phase1Complete": "Your tutor profile is complete. You're ready to find work.",
     "editProfile": "Edit profile",
     "completeProfile": "Complete tutor profile",
     "users": "Users",
@@ -71,7 +88,22 @@
     "payRegistration": "Pay registration ₹199",
     "verification": "Verification",
     "disputes": "Disputes",
-    "chat": "Messages"
+    "chat": "Messages",
+    "overview": "Overview",
+    "profile": "Profile",
+    "settings": "Settings",
+    "paymentHistory": "Payment history",
+    "roleTutor": "Tutor",
+    "openMenu": "Open menu",
+    "navWork": "Work",
+    "navTeaching": "Teaching",
+    "navPayments": "Payments",
+    "navAccount": "Account",
+    "settingsLead": "Language, password, profile, and support — in one place.",
+    "settingsLanguageHint": "Applies to the whole product, including Hindi.",
+    "settingsPasswordHint": "We'll email a reset code to the address on your account.",
+    "overviewWorkHint": "Apply to genuine requirements near you.",
+    "overviewCalendarHint": "Availability, buffers, and occupied slots."
   },
   "admin": {
     "commissionsTitle": "Commissions (admin)",
@@ -107,6 +139,7 @@
     "rejectReason": "Rejection reason",
     "documentNumber": "Document number (optional, stored encrypted)",
     "upload": "Upload document",
+    "requiredHint": "Upload ID and qualification documents. An admin must approve them before your profile is complete and discoverable in search.",
     "type_AADHAAR": "Aadhaar",
     "type_PAN": "PAN",
     "type_DEGREE": "Degree"
@@ -129,7 +162,8 @@
     "resolution": "Resolution",
     "resolve": "Resolve",
     "resolutionNotes": "Resolution notes",
-    "confirmResolve": "Confirm resolve"
+    "confirmResolve": "Confirm resolve",
+    "empty": "No disputes yet"
   },
   "profile": {
     "title": "My Profile",
@@ -147,7 +181,10 @@
     "feeChoice": "Registration fee",
     "payNow": "Pay ₹199 now (GST inclusive)",
     "earnFirst": "Earn First, Pay Later — ₹199 on first commission",
+    "feeFinalized": "Registration fee choice already finalized",
     "completeness": "Profile completeness: {score}%",
+    "profileComplete": "Profile complete",
+    "verificationRequired": "ID verification required for discoverability",
     "discoverable": "Discoverable",
     "notDiscoverable": "Not discoverable yet",
     "day": "Day",
@@ -207,7 +244,9 @@
     "complete": "Mark completed",
     "cancelDemo": "Cancel demo",
     "noShow": "Mark no-show",
-    "empty": "No demos yet"
+    "empty": "No demos yet",
+    "agreement": "Agreement",
+    "booked": "Booked"
   },
   "schedule": {
     "title": "Tutor calendar",
@@ -236,7 +275,11 @@
     "empty": "No agreements yet",
     "studentSigned": "Student signed",
     "tutorSigned": "Tutor signed",
-    "slots": "Occupied slots"
+    "slots": "Occupied slots",
+    "generate": "Generate agreement",
+    "release": "Release",
+    "retryActivation": "Retry activation",
+    "requirement": "Requirement"
   },
   "payments": {
     "commissionsTitle": "Commissions & invoices",
@@ -264,9 +307,219 @@
     "ref": "Reference"
   },
   "home": {
-    "hero": "Find verified tutors near you",
-    "ctaStudent": "I'm a Student",
-    "ctaTutor": "I'm a Tutor"
+    "hero": "Tuition, without the tension.",
+    "metaDescription": "TutorConnect India is a verified tutor marketplace. Post a requirement for free, try a demo, and sign a clear agreement. Online or at home. Hindi and English.",
+    "heroEyebrow": "Verified tutor marketplace · India",
+    "heroLead": "Find someone you can actually trust — nearby or online. Post what you need for free, try a demo, then sign a written agreement. Your phone number stays private until you both say yes.",
+    "ctaStudent": "I'm a parent / student",
+    "ctaTutor": "I teach — join as tutor",
+    "ctaHow": "See how it works",
+    "inviteNote": "We're opening carefully with invite codes. If you have one, you're in — registration takes a few minutes.",
+    "chipVerified": "Admin-verified tutors",
+    "chipPrivate": "Contact stays private",
+    "chipFree": "Free for students",
+    "cardTutorKicker": "Nearby match",
+    "cardTutorName": "CBSE · Class 10 · Maths",
+    "cardTutorMeta": "Online or at home · within your radius",
+    "cardVerified": "Verified",
+    "cardNearYou": "Ranked by fit, not ads",
+    "cardDemoKicker": "Try first",
+    "cardDemoTitle": "Demo on the calendar",
+    "cardDemoMeta": "A real class — not a chat pitch",
+    "cardAgreeKicker": "Then it's official",
+    "cardAgreeTitle": "Dual-signed PDF agreement",
+    "cardAgreeMeta": "Fee, schedule, and mode in writing",
+    "cardHelpLink": "Questions? Help desk →",
+    "whyKicker": "Why families choose us",
+    "whyTitle": "Built so you stop chasing, and start learning.",
+    "whyLead": "WhatsApp groups, fake profiles, and last-minute cancellations are exhausting. TutorConnect is the calm path: verified people, gated contact, a demo, then a contract.",
+    "why": [
+      {
+        "title": "Verified, then visible",
+        "body": "Tutors upload ID and qualifications. An admin reviews them. The badge is earned — not bought."
+      },
+      {
+        "title": "Your number stays yours",
+        "body": "Phone and chat stay closed until both of you sign. No spam, no leaking contacts into a group."
+      },
+      {
+        "title": "Students pay ₹0 to us",
+        "body": "Posting a requirement is free. There is no student platform fee, and no subscription."
+      },
+      {
+        "title": "A demo before you commit",
+        "body": "Book a trial class on the calendar. See if the teaching clicks. Then decide."
+      },
+      {
+        "title": "A written agreement",
+        "body": "Fee, schedule, and mode go into a dual-signed PDF. Not a screenshot in a chat thread."
+      },
+      {
+        "title": "Help when something slips",
+        "body": "Disputes, verification, payments — email the desk. We mediate with evidence, not noise."
+      }
+    ],
+    "howKicker": "How it works",
+    "howTitle": "Four quiet steps. Then you just learn.",
+    "howStudentTab": "For students & parents",
+    "howTutorTab": "For tutors",
+    "howStudent": [
+      {
+        "step": "01",
+        "title": "Tell us what you need",
+        "body": "Subject, class, board, budget, and online or at home. Publishing is free."
+      },
+      {
+        "step": "02",
+        "title": "Meet matches nearby",
+        "body": "We rank verified tutors by fit and distance — not by who paid to be on top."
+      },
+      {
+        "step": "03",
+        "title": "Book a demo",
+        "body": "A real session on the calendar. No in-app chat until you both agree."
+      },
+      {
+        "step": "04",
+        "title": "Sign and start",
+        "body": "Slots lock in, messages open, and you get on with tuition. That's it."
+      }
+    ],
+    "howTutor": [
+      {
+        "step": "01",
+        "title": "Build a real profile",
+        "body": "Subjects, boards, photo, radius, and when you're actually free."
+      },
+      {
+        "step": "02",
+        "title": "Get verified",
+        "body": "Upload documents. Earn the badge. Show up as someone families can trust."
+      },
+      {
+        "step": "03",
+        "title": "Apply to genuine needs",
+        "body": "Open requirements from real students — not ghost leads on a classifieds wall."
+      },
+      {
+        "step": "04",
+        "title": "Demo, sign, teach",
+        "body": "One registration fee. One-time commission per student. No monthly subscription."
+      }
+    ],
+    "availableKicker": "Available the way you need",
+    "availableTitle": "Online, at home, in the language you already use.",
+    "availableLead": "Pick the mode that fits your week. The marketplace is Hindi and English, end to end.",
+    "available": [
+      {
+        "title": "Online, across India",
+        "body": "Live classes on a shared calendar — with a 15-minute buffer so nobody is rushed."
+      },
+      {
+        "title": "Nearby, at home",
+        "body": "Tutors set a teaching radius. You see people who can actually reach you."
+      },
+      {
+        "title": "Hindi + English",
+        "body": "The whole product — from posting a need to signing an agreement — in both languages."
+      }
+    ],
+    "calmKicker": "Tension-free by design",
+    "calmTitle": "The hard parts are already handled.",
+    "calmLead": "We designed the path so you don't have to be a project manager to hire a tutor — or a salesperson to find students.",
+    "calm": [
+      {
+        "title": "No number hunting",
+        "body": "Contact is gated until the agreement is active. The relationship starts on purpose."
+      },
+      {
+        "title": "No fake listings",
+        "body": "Admin-reviewed documents and a verified badge. Discoverability follows completeness."
+      },
+      {
+        "title": "Fees you can see",
+        "body": "Tutors pay ₹199 registration (GST incl.) and a one-time 30% commission per student. Students never pay the platform."
+      },
+      {
+        "title": "A desk if it goes wrong",
+        "body": "Open a dispute with evidence. Ratings after a completed engagement. Support on email, in IST."
+      }
+    ],
+    "helpKicker": "Help desk",
+    "helpTitle": "A real person when you need one.",
+    "helpLead": "Verification, payments, demos, agreements, disputes — write to us. We'll answer in order, without making you hunt a chatbot.",
+    "helpCta": "Open the help desk",
+    "contactCta": "Contact us",
+    "contactKicker": "Write to us",
+    "contactTitle": "We're here.",
+    "contactLead": "Tell us your role, the email on your account, and what happened. Soft-launch replies land during IST business hours.",
+    "contactHours": "Email support · India Standard Time · no phone queue, no ticket maze.",
+    "finalTitle": "Ready when you are.",
+    "finalLead": "Parents post for free. Tutors join once, get verified, and teach without a subscription. Start in a few minutes."
+  },
+  "help": {
+    "kicker": "Help desk",
+    "title": "We're here. Ask plainly.",
+    "lead": "Answers for students, parents, and tutors — plus a direct line to support. No chatbot loop.",
+    "faqTitle": "Common questions",
+    "faqs": [
+      {
+        "q": "Is TutorConnect free for students?",
+        "a": "Yes. Posting a tuition requirement is free. Students never pay a platform fee or subscription. You only pay your tutor as agreed in the signed contract."
+      },
+      {
+        "q": "What do tutors pay?",
+        "a": "A one-time registration of ₹199 (GST inclusive), and a one-time commission of 30% of the monthly fee (GST inclusive) per student when the agreement becomes active. There is no monthly subscription."
+      },
+      {
+        "q": "How does verification work?",
+        "a": "Tutors upload identity and qualification documents (Aadhaar, PAN, degree). An admin reviews them. Profile completeness and search discoverability require admin approval — unverified tutors stay hidden. Approved tutors also receive a verified badge. Contact details stay hidden from public profiles."
+      },
+      {
+        "q": "When can we share phone numbers or chat?",
+        "a": "After both of you sign and the agreement is ACTIVE. Until then, use demo booking only — so numbers aren't leaked into group chats."
+      },
+      {
+        "q": "What is a demo class?",
+        "a": "A scheduled trial session between a shortlisted student and tutor. It lives on the calendar. It is how you decide if the teaching fits — not a sales call."
+      },
+      {
+        "q": "What is the agreement?",
+        "a": "A dual-signed PDF covering parties, fee, schedule, and mode. When it becomes ACTIVE, slots can be occupied, in-app chat unlocks, and tutor commission applies as shown at checkout."
+      },
+      {
+        "q": "Can we learn online and at home?",
+        "a": "Yes. Requirements and tutor profiles include mode and a teaching radius. Pick what fits your week."
+      },
+      {
+        "q": "What if something goes wrong?",
+        "a": "Open a dispute in the app with evidence. Admin reviews the case. You can also email the help desk. This does not replace remedies under Indian law."
+      },
+      {
+        "q": "Is the product in Hindi?",
+        "a": "Yes. The full student, tutor, and admin experience is available in Hindi and English. Switch anytime from the header."
+      },
+      {
+        "q": "Do I need an invite code?",
+        "a": "During invite-only soft launch, registration may ask for an invite code or an allowlisted email. If you were invited, use the code from your email. If the field is hidden, open registration is on."
+      }
+    ],
+    "contactKicker": "Contact",
+    "contactTitle": "Email the desk",
+    "contactLead": "Opens your mail app with the details filled in. We read every message during IST hours.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "hours": "We reply on email, typically within one business day during soft launch.",
+    "formName": "Your name",
+    "formEmail": "Your email",
+    "formRole": "I am a",
+    "formMessage": "How can we help?",
+    "formSubmit": "Open email to support",
+    "formHint": "This uses your email app — nothing is stored on this page.",
+    "mailSubject": "TutorConnect help request",
+    "roleStudent": "Student / parent",
+    "roleTutor": "Tutor",
+    "roleOther": "Other"
   },
   "chat": {
     "title": "Messages",
@@ -282,11 +535,101 @@
   },
   "legal": {
     "termsTitle": "Terms of Service",
-    "termsBody": "TutorConnect India connects students with tutors. Platform fees apply only to tutors (registration and one-time commission). Use of the marketplace is subject to applicable Indian law. This page is an MVP stub — replace with counsel-approved terms before production launch.",
+    "termsIntro": "These Terms govern use of TutorConnect India (\"Platform\"), a marketplace that connects students seeking tuition with independent tutors. By creating an account or using the Platform you agree to these Terms. Soft-launch / beta users receive the same protections and obligations.",
+    "termsSections": [
+      {
+        "heading": "1. Roles and accounts",
+        "body": "Each account has one role: Student, Tutor, or Admin. You must provide accurate information and keep credentials confidential. We may suspend accounts that violate these Terms, fail verification, or abuse payments."
+      },
+      {
+        "heading": "2. Marketplace relationship",
+        "body": "TutorConnect facilitates discovery, demos, agreements, and scheduling. Tutors are independent providers — not employees of TutorConnect. Students contract with tutors under digitally signed agreements generated on the Platform."
+      },
+      {
+        "heading": "3. Fees (tutors only)",
+        "body": "Students post requirements free of charge. Tutors pay a one-time registration fee (₹199 incl. GST) and a one-time commission of 30% of the agreed monthly tuition fee (GST inclusive) per student engagement, as shown at checkout. There is no subscription module in the current product."
+      },
+      {
+        "heading": "4. Demos, chat, and privacy of contact",
+        "body": "Before an agreement is ACTIVE, direct contact details stay private; demos are the trial path. After both parties sign and the agreement becomes ACTIVE, in-app chat may be used. Do not harass other users or share content that is illegal or harmful."
+      },
+      {
+        "heading": "5. Verification, ratings, and disputes",
+        "body": "Tutors may upload identity and qualification documents for admin review. Ratings are available after a completed engagement. Disputes may be opened with evidence; admin decisions on the Platform are operational and do not replace remedies available under Indian law."
+      },
+      {
+        "heading": "6. Payments",
+        "body": "Tutor payments are processed via Razorpay (or a documented mock mode in non-production). You authorize us to collect fees disclosed at checkout. Refunds, if any, follow Platform policy and payment-provider rules."
+      },
+      {
+        "heading": "7. Soft launch / invite access",
+        "body": "During invite-only soft launch, registration may require a valid invite code or allowlisted email. We may limit capacity, change features, or reset test data with notice to beta participants."
+      },
+      {
+        "heading": "8. Liability and governing law",
+        "body": "The Platform is provided on an \"as available\" basis for marketplace facilitation. To the extent permitted by law, TutorConnect is not liable for tutoring outcomes, tutor conduct off-platform, or outages beyond reasonable control. These Terms are governed by the laws of India. For notices contact the support email published on the Platform."
+      },
+      {
+        "heading": "9. Changes",
+        "body": "We may update these Terms for legal or product reasons. Material changes will be posted on this page with an updated date. Continued use after posting constitutes acceptance of the revised Terms."
+      }
+    ],
+    "termsUpdated": "Last updated: 27 August 2026",
     "privacyTitle": "Privacy Policy",
-    "privacyBody": "We process account, profile, verification, and payment data to operate the marketplace. Document numbers may be stored encrypted. Verification document access is audited. This page is an MVP stub — replace with counsel-approved privacy policy before production launch.",
-    "agreementTitle": "Agreement template",
-    "agreementBody": "Signed tutoring agreements are generated in-app as PDFs after both parties sign. Terms include schedule, monthly fee, and mode. This overview is a stub; the live PDF is the binding document for each engagement.",
+    "privacyIntro": "This Policy explains how TutorConnect India collects, uses, and protects personal data when you use our website and API. We process data to operate a verified tutor marketplace in India.",
+    "privacySections": [
+      {
+        "heading": "1. Data we collect",
+        "body": "Account data (name, email, mobile, role, locale); profile data (bio, subjects, location/pincode, photos); verification documents (e.g. ID/qualification uploads and optional document numbers); marketplace activity (requirements, matches, demos, agreements, schedules, chat after ACTIVE agreement); payment metadata (amounts, status, gateway references — card data is handled by Razorpay); technical logs and audit events for security and admin actions."
+      },
+      {
+        "heading": "2. How we use data",
+        "body": "To create and secure accounts (OTP, passwords, sessions); match students and tutors; run demos, agreements, and schedules; process tutor fees; verify tutors; handle ratings and disputes; send transactional email; improve reliability and prevent fraud; comply with law."
+      },
+      {
+        "heading": "3. Legal basis and retention",
+        "body": "We process data to perform the contract for Platform services and for legitimate interests in security and marketplace integrity. We retain account and transaction records as needed for operations, disputes, and legal retention, then delete or anonymize when no longer required."
+      },
+      {
+        "heading": "4. Sharing",
+        "body": "We share data with processors that help us run the service: hosting/database, email (SMTP), file storage (Cloudinary), payments (Razorpay), and optional error monitoring (Sentry). We do not sell personal data. Counterparties see limited information as required for demos/agreements (contact remains gated until ACTIVE)."
+      },
+      {
+        "heading": "5. Security",
+        "body": "We use HTTPS in production deployments, hashed passwords (bcrypt), hashed refresh tokens and OTPs, optional AES encryption for document numbers, role-based access control, and audited admin document views. No method of transmission is 100% secure; report suspected incidents to support."
+      },
+      {
+        "heading": "6. Your choices",
+        "body": "You may update profile data in-app, request account closure via support, and withdraw optional document numbers where the product allows. Soft-launch invitees may ask to leave the beta at any time."
+      },
+      {
+        "heading": "7. Children",
+        "body": "Accounts are intended for adults managing tuition (parents/guardians or adult students). Do not submit a child's government ID unless you are authorized and the Platform flow requires it for verification."
+      },
+      {
+        "heading": "8. Contact",
+        "body": "Privacy questions: use the support email shown on the Platform footer and in the ops playbook. We will respond within a reasonable time during soft launch."
+      }
+    ],
+    "privacyUpdated": "Last updated: 27 August 2026",
+    "agreementTitle": "Tutor–student agreement overview",
+    "agreementIntro": "When a student and tutor both sign in-app, TutorConnect generates a PDF agreement that becomes the binding record for that engagement. The live PDF (not this page) controls schedule, fee, and mode for each pair.",
+    "agreementSections": [
+      {
+        "heading": "What the PDF includes",
+        "body": "Parties' names; subject/class context; monthly tuition fee; schedule slots (day/time/mode); buffer and occupy/release rules as implemented on the Platform; signatures with timestamps."
+      },
+      {
+        "heading": "When it becomes active",
+        "body": "After both signatures, the agreement status becomes ACTIVE, matching slots may be occupied, chat unlocks, and tutor commission obligations apply as disclosed in product fees."
+      },
+      {
+        "heading": "Changes and disputes",
+        "body": "Schedule releases are handled in-app by the student where allowed. Disputes with evidence can be filed for admin review. Serious issues should also use appropriate offline legal remedies."
+      }
+    ],
+    "agreementUpdated": "Last updated: 27 August 2026",
+    "supportLabel": "Support",
     "termsLink": "Terms",
     "privacyLink": "Privacy",
     "agreementLink": "Agreements"

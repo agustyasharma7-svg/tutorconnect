@@ -1,8 +1,11 @@
-import { NestFactory } from '@nestjs/core';
+import './instrument';
+import { NestFactory, HttpAdapterHost } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import { SentryExceptionFilter } from './common/sentry-exception.filter';
 
 async function bootstrap() {
   const isProd = process.env.NODE_ENV === 'production';
@@ -29,9 +32,23 @@ async function bootstrap() {
     ) {
       throw new Error('JWT secrets must not use development placeholders in production');
     }
+    if (process.env.PAYMENTS_MOCK === 'true') {
+      throw new Error(
+        'PAYMENTS_MOCK must not be true when NODE_ENV=production',
+      );
+    }
+    if (!process.env.DOCUMENT_ENCRYPTION_KEY?.trim()) {
+      throw new Error(
+        'DOCUMENT_ENCRYPTION_KEY is required when NODE_ENV=production',
+      );
+    }
   }
 
   const app = await NestFactory.create(AppModule, { rawBody: true });
+
+  const adapterHost = app.get(HttpAdapterHost);
+  app.useGlobalFilters(new SentryExceptionFilter(adapterHost));
+  app.use(cookieParser());
 
   app.use(
     helmet({
@@ -71,8 +88,8 @@ async function bootstrap() {
   if (!isProd) {
     const config = new DocumentBuilder()
       .setTitle('TutorConnect India API')
-      .setDescription('MVP API — Phase 6 hardening')
-      .setVersion('0.6.0')
+      .setDescription('MVP API — Phase 6 / 7 hardening')
+      .setVersion('0.7.0')
       .addBearerAuth()
       .build();
     const document = SwaggerModule.createDocument(app, config);

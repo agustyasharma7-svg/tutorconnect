@@ -1,8 +1,20 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import {
+  Alert,
+  Button,
+  Card,
+  FormField,
+  Input,
+  PageHeader,
+  Select,
+  Spinner,
+  Textarea,
+} from '@/components/ui';
 import { api, apiWithAuth, assetUrl } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
+import { readBrowserPosition, resolveGeo } from '@/lib/geo';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -21,7 +33,9 @@ type TutorProfile = {
   isDiscoverable?: boolean;
   isVerified?: boolean;
   verificationStatus?: string;
-  completeness?: { score: number };
+  registrationFeeChoice?: 'PAY_NOW' | 'EARN_FIRST' | null;
+  registrationFeeStatus?: 'PENDING' | 'PAID' | 'WAIVED' | 'REFUNDED' | null;
+  completeness?: { score: number; isComplete?: boolean };
   subjects?: CatalogItem[];
   classes?: CatalogItem[];
   boards?: CatalogItem[];
@@ -30,9 +44,34 @@ type TutorProfile = {
 
 const DAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+        active
+          ? 'bg-brand text-white'
+          : 'bg-cream-dark/60 text-ink hover:bg-cream-dark'
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function TutorOnboardingPage() {
   const t = useTranslations('profile');
   const tc = useTranslations('common');
+  const ta = useTranslations('auth');
   const tv = useTranslations('verification');
   const td = useTranslations('dashboard');
   const { locale } = useParams<{ locale: string }>();
@@ -57,6 +96,10 @@ export default function TutorOnboardingPage() {
   ]);
   const [pincode, setPincode] = useState('');
   const [radius, setRadius] = useState(10);
+  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(
+    null,
+  );
+  const [geoSource, setGeoSource] = useState('');
   const [feeChoice, setFeeChoice] = useState<'PAY_NOW' | 'EARN_FIRST'>('EARN_FIRST');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -77,24 +120,40 @@ export default function TutorOnboardingPage() {
       api<CatalogItem[]>('/catalog/subjects'),
       api<CatalogItem[]>('/catalog/classes'),
       api<CatalogItem[]>('/catalog/boards'),
-    ]).then(([me, s, c, b]) => {
-      setProfile(me);
-      setForm({
-        name: me.name ?? '',
-        bio: me.bio ?? '',
-        experienceYears: me.experienceYears ?? 1,
-        qualification: me.qualification ?? '',
+    ])
+      .then(([me, s, c, b]) => {
+        setProfile(me);
+        setForm({
+          name: me.name ?? '',
+          bio: me.bio ?? '',
+          experienceYears: me.experienceYears ?? 1,
+          qualification: me.qualification ?? '',
+        });
+        setSelectedSubjects(me.subjects?.map((x) => x.id) ?? []);
+        setSelectedClasses(me.classes?.map((x) => x.id) ?? []);
+        setSelectedBoards(me.boards?.map((x) => x.id) ?? []);
+        if (me.availability?.length) {
+          setSlots(
+            me.availability.map(({ day, startTime, endTime, mode }) => ({
+              day,
+              startTime,
+              endTime,
+              mode,
+            })),
+          );
+        }
+        if (me.pincode) setPincode(me.pincode);
+        if (me.teachingRadiusKm) setRadius(me.teachingRadiusKm);
+        if (me.registrationFeeChoice === 'PAY_NOW' || me.registrationFeeChoice === 'EARN_FIRST') {
+          setFeeChoice(me.registrationFeeChoice);
+        }
+        setSubjects(s);
+        setClasses(c);
+        setBoards(b);
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed');
       });
-      setSelectedSubjects(me.subjects?.map((x) => x.id) ?? []);
-      setSelectedClasses(me.classes?.map((x) => x.id) ?? []);
-      setSelectedBoards(me.boards?.map((x) => x.id) ?? []);
-      if (me.availability?.length) setSlots(me.availability);
-      if (me.pincode) setPincode(me.pincode);
-      if (me.teachingRadiusKm) setRadius(me.teachingRadiusKm);
-      setSubjects(s);
-      setClasses(c);
-      setBoards(b);
-    });
   }, [locale, router]);
 
   const toggle = (list: string[], id: string, setter: (v: string[]) => void) => {
@@ -150,7 +209,7 @@ export default function TutorOnboardingPage() {
         body,
       });
       setProfile(me);
-      setMessage('Photo uploaded');
+      setMessage(t('photo'));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed');
     } finally {
@@ -164,7 +223,14 @@ export default function TutorOnboardingPage() {
     try {
       const me = await apiWithAuth<TutorProfile>('/tutors/me/availability', token, {
         method: 'PATCH',
-        body: JSON.stringify({ slots }),
+        body: JSON.stringify({
+          slots: slots.map(({ day, startTime, endTime, mode }) => ({
+            day,
+            startTime,
+            endTime,
+            mode,
+          })),
+        }),
       });
       setProfile(me);
       setStep(3);
@@ -175,13 +241,38 @@ export default function TutorOnboardingPage() {
     }
   };
 
+  const captureMyLocation = async () => {
+    setError('');
+    const browser = await readBrowserPosition();
+    if (!browser) {
+      setError('Could not read device location. Allow location access or enter a pincode.');
+      return;
+    }
+    setCoords(browser);
+    setGeoSource('device');
+  };
+
   const saveLocation = async () => {
     setLoading(true);
     setError('');
     try {
+      let latitude = coords?.latitude;
+      let longitude = coords?.longitude;
+      if ((latitude == null || longitude == null) && /^\d{6}$/.test(pincode)) {
+        const resolved = await resolveGeo({ pincode });
+        latitude = resolved.latitude;
+        longitude = resolved.longitude;
+        setCoords({ latitude, longitude });
+        setGeoSource(resolved.source);
+      }
       const me = await apiWithAuth<TutorProfile>('/tutors/me/location', token, {
         method: 'PATCH',
-        body: JSON.stringify({ pincode, teachingRadiusKm: radius }),
+        body: JSON.stringify({
+          pincode: pincode || undefined,
+          teachingRadiusKm: radius,
+          latitude,
+          longitude,
+        }),
       });
       setProfile(me);
       setStep(4);
@@ -197,6 +288,16 @@ export default function TutorOnboardingPage() {
     setLoading(true);
     setError('');
     try {
+      const feeFinalized =
+        profile.registrationFeeStatus === 'PAID' ||
+        profile.registrationFeeStatus === 'WAIVED';
+
+      if (feeFinalized) {
+        setMessage(tc('save'));
+        router.push(`/${locale}/dashboard/tutor`);
+        return;
+      }
+
       const res = await apiWithAuth<{ checkoutRequired?: boolean }>(
         '/tutors/me/registration-fee-choice',
         token,
@@ -207,7 +308,7 @@ export default function TutorOnboardingPage() {
       );
       const me = await apiWithAuth<TutorProfile>('/tutors/me', token);
       setProfile(me);
-      setMessage('Profile saved');
+      setMessage(tc('save'));
       if (res.checkoutRequired) {
         router.push(`/${locale}/payments/registration`);
       } else {
@@ -220,182 +321,212 @@ export default function TutorOnboardingPage() {
     }
   };
 
-  if (!profile) return <p className="p-8">{tc('loading')}</p>;
+  if (!profile) {
+    return (
+      <AppFrame>
+        {error ? (
+          <Alert className="m-8">{error}</Alert>
+        ) : (
+          <Spinner label={tc('loading')} />
+        )}
+      </AppFrame>
+    );
+  }
 
   return (
-    <>
-      <SiteHeader />
+    <AppFrame>
       <main className="mx-auto max-w-2xl px-4 py-10">
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{t('title')}</h1>
-          <Link href={`/${locale}/dashboard/tutor`} className="text-sm text-blue-600">
-            {tc('back')}
-          </Link>
-        </div>
-        <p className="mb-4 text-sm text-gray-600">
-          {t('completeness', { score: profile.completeness?.score ?? 0 })} —{' '}
-          {profile.isDiscoverable ? t('discoverable') : t('notDiscoverable')}
+        <PageHeader
+          title={t('title')}
+          actions={
+            <Link
+              href={`/${locale}/dashboard/tutor`}
+              className="text-sm font-medium text-brand hover:underline"
+            >
+              {tc('back')}
+            </Link>
+          }
+        />
+        <p className="mb-2 flex flex-wrap items-center gap-2 text-sm text-ink-muted">
+          <span>
+            {t('completeness', { score: profile.completeness?.score ?? 0 })} —{' '}
+            {profile.isDiscoverable ? t('discoverable') : t('notDiscoverable')}
+          </span>
+          {(profile.completeness?.isComplete || profile.completeness?.score === 100) && (
+            <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+              {t('profileComplete')}
+            </span>
+          )}
         </p>
-        <p className="mb-4 text-sm">
+        <p className="mb-4 text-sm text-ink">
           {tv('status')}: <strong>{profile.verificationStatus ?? 'NOT_SUBMITTED'}</strong>
           {profile.isVerified ? ` · ${tv('verified')}` : ''}
+          {!profile.isVerified && (
+            <>
+              {' · '}
+              <span className="text-ink-muted">{t('verificationRequired')}</span>
+            </>
+          )}
           {' · '}
-          <Link href={`/${locale}/verification`} className="text-blue-600 underline">
+          <Link href={`/${locale}/verification`} className="text-brand underline">
             {td('verification')}
           </Link>
         </p>
-        <div className="mb-6 flex gap-2 text-xs">
+
+        <div className="mb-6 flex gap-2" aria-hidden>
           {[0, 1, 2, 3, 4].map((s) => (
             <div
               key={s}
-              className={`h-2 flex-1 rounded ${s <= step ? 'bg-blue-600' : 'bg-gray-200'}`}
+              className={`h-2 flex-1 rounded-full ${s <= step ? 'bg-brand' : 'bg-cream-dark'}`}
             />
           ))}
         </div>
 
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-        {message && <p className="mb-3 text-sm text-green-700">{message}</p>}
+        {error && <Alert className="mb-3">{error}</Alert>}
+        {message && (
+          <Alert tone="success" className="mb-3">
+            {message}
+          </Alert>
+        )}
 
         {step === 0 && (
-          <div className="space-y-4 rounded-lg bg-white p-6 shadow">
-            <input
-              className="w-full rounded border px-3 py-2"
-              placeholder={tc('name')}
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
-            <textarea
-              className="w-full rounded border px-3 py-2"
-              rows={4}
-              placeholder={t('bio')}
-              value={form.bio}
-              onChange={(e) => setForm({ ...form, bio: e.target.value })}
-            />
-            <input
-              type="number"
-              min={0}
-              className="w-full rounded border px-3 py-2"
-              placeholder={t('experience')}
-              value={form.experienceYears}
-              onChange={(e) =>
-                setForm({ ...form, experienceYears: Number(e.target.value) })
-              }
-            />
-            <input
-              className="w-full rounded border px-3 py-2"
-              placeholder="Qualification"
-              value={form.qualification}
-              onChange={(e) => setForm({ ...form, qualification: e.target.value })}
-            />
+          <Card className="space-y-4">
+            <FormField label={tc('name')} id="tutor-name">
+              {(id) => (
+                <Input
+                  id={id}
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                />
+              )}
+            </FormField>
+            <FormField label={t('bio')} id="tutor-bio">
+              {(id) => (
+                <Textarea
+                  id={id}
+                  rows={4}
+                  value={form.bio}
+                  onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                />
+              )}
+            </FormField>
+            <FormField label={t('experience')} id="tutor-exp">
+              {(id) => (
+                <Input
+                  id={id}
+                  type="number"
+                  min={0}
+                  value={form.experienceYears}
+                  onChange={(e) =>
+                    setForm({ ...form, experienceYears: Number(e.target.value) })
+                  }
+                />
+              )}
+            </FormField>
+            <FormField label={ta('qualification')} id="tutor-qual">
+              {(id) => (
+                <Input
+                  id={id}
+                  value={form.qualification}
+                  onChange={(e) =>
+                    setForm({ ...form, qualification: e.target.value })
+                  }
+                />
+              )}
+            </FormField>
             <div>
-              <label className="mb-1 block text-sm">{t('photo')}</label>
+              <p className="mb-1.5 text-sm font-medium text-ink">{t('photo')}</p>
               {profile.photoUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={assetUrl(profile.photoUrl)}
-                  alt="photo"
-                  className="mb-2 h-20 w-20 rounded object-cover"
+                  alt={form.name || t('photo')}
+                  className="mb-2 h-20 w-20 rounded-panel object-cover"
                 />
               )}
-              <input
+              <Input
                 type="file"
                 accept="image/png,image/jpeg"
-                onChange={(e) => e.target.files?.[0] && uploadPhoto(e.target.files[0])}
+                aria-label={t('photo')}
+                onChange={(e) =>
+                  e.target.files?.[0] && uploadPhoto(e.target.files[0])
+                }
               />
             </div>
-            <button
-              type="button"
-              disabled={loading}
-              onClick={saveBasics}
-              className="rounded bg-blue-600 px-4 py-2 text-white"
-            >
+            <Button type="button" disabled={loading} onClick={saveBasics}>
               {tc('next')}
-            </button>
-          </div>
+            </Button>
+          </Card>
         )}
 
         {step === 1 && (
-          <div className="space-y-4 rounded-lg bg-white p-6 shadow">
+          <Card className="space-y-4">
             <div>
-              <p className="mb-2 font-medium">{t('subjects')}</p>
+              <p className="mb-2 font-medium text-ink">{t('subjects')}</p>
               <div className="flex flex-wrap gap-2">
                 {subjects.map((s) => (
-                  <button
+                  <Chip
                     key={s.id}
-                    type="button"
-                    onClick={() => toggle(selectedSubjects, s.id, setSelectedSubjects)}
-                    className={`rounded px-3 py-1 text-sm ${
-                      selectedSubjects.includes(s.id)
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100'
-                    }`}
+                    active={selectedSubjects.includes(s.id)}
+                    onClick={() =>
+                      toggle(selectedSubjects, s.id, setSelectedSubjects)
+                    }
                   >
                     {label(s)}
-                  </button>
+                  </Chip>
                 ))}
               </div>
             </div>
             <div>
-              <p className="mb-2 font-medium">{t('classes')}</p>
+              <p className="mb-2 font-medium text-ink">{t('classes')}</p>
               <div className="flex flex-wrap gap-2">
                 {classes.map((s) => (
-                  <button
+                  <Chip
                     key={s.id}
-                    type="button"
-                    onClick={() => toggle(selectedClasses, s.id, setSelectedClasses)}
-                    className={`rounded px-3 py-1 text-sm ${
-                      selectedClasses.includes(s.id)
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100'
-                    }`}
+                    active={selectedClasses.includes(s.id)}
+                    onClick={() =>
+                      toggle(selectedClasses, s.id, setSelectedClasses)
+                    }
                   >
                     {label(s)}
-                  </button>
+                  </Chip>
                 ))}
               </div>
             </div>
             <div>
-              <p className="mb-2 font-medium">{t('boards')}</p>
+              <p className="mb-2 font-medium text-ink">{t('boards')}</p>
               <div className="flex flex-wrap gap-2">
                 {boards.map((s) => (
-                  <button
+                  <Chip
                     key={s.id}
-                    type="button"
-                    onClick={() => toggle(selectedBoards, s.id, setSelectedBoards)}
-                    className={`rounded px-3 py-1 text-sm ${
-                      selectedBoards.includes(s.id)
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100'
-                    }`}
+                    active={selectedBoards.includes(s.id)}
+                    onClick={() =>
+                      toggle(selectedBoards, s.id, setSelectedBoards)
+                    }
                   >
                     {label(s)}
-                  </button>
+                  </Chip>
                 ))}
               </div>
             </div>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setStep(0)} className="rounded border px-4 py-2">
+              <Button type="button" variant="secondary" onClick={() => setStep(0)}>
                 {tc('previous')}
-              </button>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={saveSubjects}
-                className="rounded bg-blue-600 px-4 py-2 text-white"
-              >
+              </Button>
+              <Button type="button" disabled={loading} onClick={saveSubjects}>
                 {tc('next')}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         )}
 
         {step === 2 && (
-          <div className="space-y-4 rounded-lg bg-white p-6 shadow">
-            <p className="font-medium">{t('availability')}</p>
+          <Card className="space-y-4">
+            <p className="font-medium text-ink">{t('availability')}</p>
             {slots.map((slot, idx) => (
               <div key={idx} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <select
-                  className="rounded border px-2 py-2"
+                <Select
+                  aria-label="Day"
                   value={slot.day}
                   onChange={(e) => {
                     const next = [...slots];
@@ -408,10 +539,10 @@ export default function TutorOnboardingPage() {
                       {d}
                     </option>
                   ))}
-                </select>
-                <input
+                </Select>
+                <Input
                   type="time"
-                  className="rounded border px-2 py-2"
+                  aria-label="Start"
                   value={slot.startTime}
                   onChange={(e) => {
                     const next = [...slots];
@@ -419,9 +550,9 @@ export default function TutorOnboardingPage() {
                     setSlots(next);
                   }}
                 />
-                <input
+                <Input
                   type="time"
-                  className="rounded border px-2 py-2"
+                  aria-label="End"
                   value={slot.endTime}
                   onChange={(e) => {
                     const next = [...slots];
@@ -429,8 +560,8 @@ export default function TutorOnboardingPage() {
                     setSlots(next);
                   }}
                 />
-                <select
-                  className="rounded border px-2 py-2"
+                <Select
+                  aria-label="Mode"
                   value={slot.mode}
                   onChange={(e) => {
                     const next = [...slots];
@@ -443,105 +574,141 @@ export default function TutorOnboardingPage() {
                 >
                   <option value="ONLINE">{t('online')}</option>
                   <option value="OFFLINE">{t('offline')}</option>
-                </select>
+                </Select>
               </div>
             ))}
-            <button
+            <Button
               type="button"
-              className="text-sm text-blue-600"
+              variant="link"
               onClick={() =>
                 setSlots([
                   ...slots,
-                  { day: 'WED', startTime: '18:00', endTime: '19:00', mode: 'ONLINE' },
+                  {
+                    day: 'WED',
+                    startTime: '18:00',
+                    endTime: '19:00',
+                    mode: 'ONLINE',
+                  },
                 ])
               }
             >
               {t('addSlot')}
-            </button>
+            </Button>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setStep(1)} className="rounded border px-4 py-2">
+              <Button type="button" variant="secondary" onClick={() => setStep(1)}>
                 {tc('previous')}
-              </button>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={saveAvailability}
-                className="rounded bg-blue-600 px-4 py-2 text-white"
-              >
+              </Button>
+              <Button type="button" disabled={loading} onClick={saveAvailability}>
                 {tc('next')}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         )}
 
         {step === 3 && (
-          <div className="space-y-4 rounded-lg bg-white p-6 shadow">
-            <p className="font-medium">{t('location')}</p>
-            <input
-              className="w-full rounded border px-3 py-2"
-              placeholder={t('pincode')}
-              value={pincode}
-              onChange={(e) => setPincode(e.target.value)}
-            />
-            <select
-              className="w-full rounded border px-3 py-2"
-              value={radius}
-              onChange={(e) => setRadius(Number(e.target.value))}
-            >
-              <option value={5}>5 km</option>
-              <option value={10}>10 km</option>
-              <option value={20}>20 km</option>
-            </select>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setStep(2)} className="rounded border px-4 py-2">
-                {tc('previous')}
-              </button>
-              <button
-                type="button"
-                disabled={loading}
-                onClick={saveLocation}
-                className="rounded bg-blue-600 px-4 py-2 text-white"
-              >
-                {tc('next')}
-              </button>
+          <Card className="space-y-4">
+            <p className="font-medium text-ink">{t('location')}</p>
+            <FormField label={t('pincode')} id="tutor-pin">
+              {(id) => (
+                <Input
+                  id={id}
+                  value={pincode}
+                  onChange={(e) => {
+                    setPincode(e.target.value);
+                    setCoords(null);
+                    setGeoSource('');
+                  }}
+                  inputMode="numeric"
+                  maxLength={6}
+                />
+              )}
+            </FormField>
+            <FormField label={t('location')} id="tutor-radius">
+              {(id) => (
+                <Select
+                  id={id}
+                  value={radius}
+                  onChange={(e) => setRadius(Number(e.target.value))}
+                >
+                  <option value={5}>5 km</option>
+                  <option value={10}>10 km</option>
+                  <option value={20}>20 km</option>
+                </Select>
+              )}
+            </FormField>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="button" variant="secondary" onClick={captureMyLocation}>
+                Use my location
+              </Button>
+              {coords && (
+                <p className="text-xs text-ink-muted">
+                  {coords.latitude.toFixed(5)}, {coords.longitude.toFixed(5)}
+                  {geoSource ? ` (${geoSource})` : ''}
+                </p>
+              )}
             </div>
-          </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="secondary" onClick={() => setStep(2)}>
+                {tc('previous')}
+              </Button>
+              <Button type="button" disabled={loading} onClick={saveLocation}>
+                {tc('next')}
+              </Button>
+            </div>
+          </Card>
         )}
 
         {step === 4 && (
-          <form onSubmit={saveFee} className="space-y-4 rounded-lg bg-white p-6 shadow">
-            <p className="font-medium">{t('feeChoice')}</p>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                checked={feeChoice === 'EARN_FIRST'}
-                onChange={() => setFeeChoice('EARN_FIRST')}
-              />
-              {t('earnFirst')}
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                checked={feeChoice === 'PAY_NOW'}
-                onChange={() => setFeeChoice('PAY_NOW')}
-              />
-              {t('payNow')}
-            </label>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => setStep(3)} className="rounded border px-4 py-2">
-                {tc('previous')}
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="rounded bg-blue-600 px-4 py-2 text-white"
-              >
-                {tc('save')}
-              </button>
-            </div>
-          </form>
+          <Card>
+            <form onSubmit={saveFee} className="space-y-4">
+              <p className="font-medium text-ink">{t('feeChoice')}</p>
+              {(profile.registrationFeeStatus === 'PAID' ||
+                profile.registrationFeeStatus === 'WAIVED') && (
+                <Alert tone="success">{t('feeFinalized')}</Alert>
+              )}
+              <label className="flex items-center gap-2 text-sm text-ink">
+                <input
+                  type="radio"
+                  checked={feeChoice === 'EARN_FIRST'}
+                  disabled={
+                    profile.registrationFeeStatus === 'PAID' ||
+                    profile.registrationFeeStatus === 'WAIVED'
+                  }
+                  onChange={() => setFeeChoice('EARN_FIRST')}
+                />
+                {t('earnFirst')}
+              </label>
+              <label className="flex items-center gap-2 text-sm text-ink">
+                <input
+                  type="radio"
+                  checked={feeChoice === 'PAY_NOW'}
+                  disabled={
+                    profile.registrationFeeStatus === 'PAID' ||
+                    profile.registrationFeeStatus === 'WAIVED'
+                  }
+                  onChange={() => setFeeChoice('PAY_NOW')}
+                />
+                {t('payNow')}
+              </label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setStep(3)}
+                >
+                  {tc('previous')}
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {profile.registrationFeeStatus === 'PAID' ||
+                  profile.registrationFeeStatus === 'WAIVED'
+                    ? tc('next')
+                    : tc('save')}
+                </Button>
+              </div>
+            </form>
+          </Card>
         )}
       </main>
-    </>
+    </AppFrame>
   );
 }

@@ -1,9 +1,9 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
-import { clearAuth, getStoredUser } from '@/lib/auth';
+import { StudentAppShell } from '@/components/app-shell/StudentAppShell';
+import { ButtonLink, Card, PageHeader, Spinner } from '@/components/ui';
+import { getStoredUser } from '@/lib/auth';
 import { AuthUser } from '@/lib/types';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -28,67 +28,44 @@ export default function StudentDashboard() {
     setUser(stored);
   }, [locale, router]);
 
-  if (!user) return <p className="p-8">{tc('loading')}</p>;
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Spinner label={tc('loading')} />
+      </div>
+    );
+  }
+
+  const actions = [
+    { href: `/${locale}/profile/student`, label: t('editProfile'), variant: 'primary' as const },
+    { href: `/${locale}/requirements/new`, label: t('postRequirement'), variant: 'secondary' as const },
+    { href: `/${locale}/requirements`, label: t('myRequirements'), variant: 'secondary' as const },
+    { href: `/${locale}/search`, label: t('findTutors'), variant: 'secondary' as const },
+    { href: `/${locale}/matches/inbox`, label: t('applicationsInbox'), variant: 'secondary' as const },
+    { href: `/${locale}/demos`, label: t('demos'), variant: 'secondary' as const },
+    { href: `/${locale}/agreements`, label: t('agreements'), variant: 'secondary' as const },
+    { href: `/${locale}/chat`, label: t('chat'), variant: 'secondary' as const },
+    { href: `/${locale}/disputes`, label: t('disputes'), variant: 'secondary' as const },
+  ];
 
   return (
-    <>
-      <SiteHeader />
-      <main className="mx-auto max-w-5xl px-4 py-12">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{t('student')}</h1>
-          <button
-            onClick={() => {
-              clearAuth();
-              router.push(`/${locale}/auth/login`);
-            }}
-            className="text-sm text-red-600 underline"
-          >
-            {tc('logout')}
-          </button>
-        </div>
-        <p className="mt-4 text-lg">{t('welcome', { name: user.name })}</p>
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link
-            href={`/${locale}/profile/student`}
-            className="rounded bg-blue-600 px-4 py-2 text-white"
-          >
-            {t('editProfile')}
-          </Link>
-          <Link
-            href={`/${locale}/requirements`}
-            className="rounded border px-4 py-2"
-          >
-            {t('myRequirements')}
-          </Link>
-          <Link
-            href={`/${locale}/requirements/new`}
-            className="rounded border px-4 py-2"
-          >
-            {t('postRequirement')}
-          </Link>
-          <Link href={`/${locale}/search`} className="rounded border px-4 py-2">
-            {t('findTutors')}
-          </Link>
-          <Link
-            href={`/${locale}/matches/inbox`}
-            className="rounded border px-4 py-2"
-          >
-            {t('applicationsInbox')}
-          </Link>
-          <Link href={`/${locale}/demos`} className="rounded border px-4 py-2">
-            {t('demos')}
-          </Link>
-          <Link href={`/${locale}/agreements`} className="rounded border px-4 py-2">
-            {t('agreements')}
-          </Link>
-          <Link href={`/${locale}/chat`} className="rounded border px-4 py-2">
-            {t('chat')}
-          </Link>
-          <Link href={`/${locale}/disputes`} className="rounded border px-4 py-2">
-            {t('disputes')}
-          </Link>
-        </div>
+    <StudentAppShell>
+      <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+        <PageHeader
+          title={t('student')}
+          description={t('welcome', { name: user.name })}
+        />
+        <Card>
+          <p className="text-sm text-ink-muted">{t('phase1')}</p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {actions.map((a) => (
+              <ButtonLink key={a.href} href={a.href} variant={a.variant} size="sm">
+                {a.label}
+              </ButtonLink>
+            ))}
+          </div>
+        </Card>
       </main>
-    </>
+    </StudentAppShell>
   );
 }

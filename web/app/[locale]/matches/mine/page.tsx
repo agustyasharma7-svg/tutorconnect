@@ -1,9 +1,16 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import {
+  Alert,
+  Button,
+  ButtonLink,
+  Card,
+  EmptyState,
+  PageHeader,
+} from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -58,42 +65,51 @@ export default function TutorMatchesPage() {
   };
 
   return (
-    <>
-      <SiteHeader />
+    <AppFrame>
       <main className="mx-auto max-w-3xl px-4 py-10">
-        <h1 className="mb-4 text-2xl font-bold">{t('mineTitle')}</h1>
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-        <ul className="space-y-3">
-          {rows.map((row) => (
-            <li key={row.id} className="rounded-lg bg-white p-4 shadow">
-              <p className="font-medium">
-                {label(row.requirement.subject)} · {label(row.requirement.class)}
-              </p>
-              <p className="text-sm text-gray-600">
-                {tc('status')}: {row.status} · ₹{row.requirement.budgetMin}–
-                {row.requirement.budgetMax}
-              </p>
-              <div className="mt-2 flex gap-3 text-sm">
-                <Link
-                  href={`/${locale}/requirements/${row.requirement.id}`}
-                  className="text-blue-600"
-                >
-                  {tc('view')}
-                </Link>
-                {['APPLIED', 'INVITED'].includes(row.status) && (
-                  <button
-                    type="button"
-                    className="text-red-600"
-                    onClick={() => withdraw(row.id)}
-                  >
-                    {tc('withdraw')}
-                  </button>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+        <PageHeader title={t('mineTitle')} />
+        {error && <Alert className="mb-3">{error}</Alert>}
+        {!rows.length && !error ? (
+          <EmptyState title={t('mineTitle')} />
+        ) : (
+          <ul className="space-y-3">
+            {rows.map((row) => (
+              <li key={row.id}>
+                <Card className="p-4">
+                  <p className="font-medium text-ink">
+                    {label(row.requirement.subject)} ·{' '}
+                    {label(row.requirement.class)}
+                  </p>
+                  <p className="text-sm text-ink-muted">
+                    {tc('status')}: {row.status} · ₹{row.requirement.budgetMin}–
+                    {row.requirement.budgetMax}
+                  </p>
+                  <div className="mt-2 flex gap-3">
+                    <ButtonLink
+                      href={`/${locale}/requirements/${row.requirement.id}`}
+                      variant="link"
+                      size="sm"
+                    >
+                      {tc('view')}
+                    </ButtonLink>
+                    {['APPLIED', 'INVITED'].includes(row.status) && (
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        className="text-danger"
+                        onClick={() => withdraw(row.id)}
+                      >
+                        {tc('withdraw')}
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
       </main>
-    </>
+    </AppFrame>
   );
 }

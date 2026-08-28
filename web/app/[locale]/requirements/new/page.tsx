@@ -1,9 +1,21 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import {
+  Alert,
+  Button,
+  ButtonLink,
+  Card,
+  EmptyState,
+  FormField,
+  Input,
+  PageHeader,
+  Select,
+  Textarea,
+} from '@/components/ui';
 import { api, apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
-import Link from 'next/link';
+import { readBrowserPosition, resolveGeo } from '@/lib/geo';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
@@ -41,7 +53,10 @@ export default function RequirementFormPage() {
     pincode: '',
     address: '',
     notes: '',
+    latitude: undefined as number | undefined,
+    longitude: undefined as number | undefined,
   });
+  const [geoHint, setGeoHint] = useState('');
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const label = (item: CatalogItem) => (locale === 'hi' ? item.nameHi : item.nameEn);
@@ -88,6 +103,8 @@ export default function RequirementFormPage() {
           pincode: (r as { pincode?: string }).pincode ?? '',
           address: (r as { address?: string }).address ?? '',
           notes: (r as { notes?: string }).notes ?? '',
+          latitude: (r as { latitude?: number | null }).latitude ?? undefined,
+          longitude: (r as { longitude?: number | null }).longitude ?? undefined,
         });
       });
     }
@@ -104,6 +121,8 @@ export default function RequirementFormPage() {
           pincode: next.pincode || undefined,
           address: next.address || undefined,
           notes: next.notes || undefined,
+          latitude: next.latitude,
+          longitude: next.longitude,
         });
         if (reqId) {
           await apiWithAuth(`/requirements/${reqId}`, token, {
@@ -150,150 +169,269 @@ export default function RequirementFormPage() {
   };
 
   return (
-    <>
-      <SiteHeader />
+    <AppFrame>
       <main className="mx-auto max-w-2xl px-4 py-10">
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{reqId ? t('edit') : t('new')}</h1>
-          <Link href={`/${locale}/requirements`} className="text-sm text-blue-600">
-            {tc('back')}
-          </Link>
-        </div>
-        <p className="mb-4 text-sm text-green-700">{t('freePosting')}</p>
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+        <PageHeader
+          title={reqId ? t('edit') : t('new')}
+          actions={
+            <ButtonLink
+              href={`/${locale}/requirements`}
+              variant="link"
+              size="sm"
+            >
+              {tc('back')}
+            </ButtonLink>
+          }
+        />
+        <Alert tone="success" className="mb-4">
+          {t('freePosting')}
+        </Alert>
+        {error && <Alert className="mb-3">{error}</Alert>}
         {message && (
-          <p className="mb-3 text-sm text-gray-600">
+          <Alert tone="info" className="mb-3">
             {message}
             {saving ? '…' : ''}
-          </p>
+          </Alert>
         )}
-        <form onSubmit={onSubmit} className="space-y-4 rounded-lg bg-white p-6 shadow">
-          <select
-            className="w-full rounded border px-3 py-2"
-            value={form.subjectId}
-            onChange={(e) => scheduleSave({ ...form, subjectId: e.target.value })}
-          >
-            {subjects.map((s) => (
-              <option key={s.id} value={s.id}>
-                {label(s)}
-              </option>
-            ))}
-          </select>
-          <select
-            className="w-full rounded border px-3 py-2"
-            value={form.classId}
-            onChange={(e) => scheduleSave({ ...form, classId: e.target.value })}
-          >
-            {classes.map((s) => (
-              <option key={s.id} value={s.id}>
-                {label(s)}
-              </option>
-            ))}
-          </select>
-          <select
-            className="w-full rounded border px-3 py-2"
-            value={form.boardId}
-            onChange={(e) => scheduleSave({ ...form, boardId: e.target.value })}
-          >
-            {boards.map((s) => (
-              <option key={s.id} value={s.id}>
-                {label(s)}
-              </option>
-            ))}
-          </select>
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="number"
-              className="rounded border px-3 py-2"
-              placeholder={t('budgetMin')}
-              value={form.budgetMin}
-              onChange={(e) =>
-                scheduleSave({ ...form, budgetMin: Number(e.target.value) })
-              }
-            />
-            <input
-              type="number"
-              className="rounded border px-3 py-2"
-              placeholder={t('budgetMax')}
-              value={form.budgetMax}
-              onChange={(e) =>
-                scheduleSave({ ...form, budgetMax: Number(e.target.value) })
-              }
-            />
-          </div>
-          <select
-            className="w-full rounded border px-3 py-2"
-            value={form.mode}
-            onChange={(e) => scheduleSave({ ...form, mode: e.target.value })}
-          >
-            <option value="ONLINE">{tp('online')}</option>
-            <option value="OFFLINE">{tp('offline')}</option>
-            <option value="BOTH">{tc('both')}</option>
-          </select>
-          <div>
-            <p className="mb-2 text-sm font-medium">{t('scheduleDays')}</p>
-            <div className="flex flex-wrap gap-2">
-              {DAYS.map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  onClick={() => toggleDay(d)}
-                  className={`rounded px-3 py-1 text-sm ${
-                    form.scheduleDays.includes(d)
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100'
-                  }`}
+        <Card>
+          <form onSubmit={onSubmit} className="space-y-4">
+            <FormField label={tp('subjects')} id="req-subject">
+              {(id) => (
+                <Select
+                  id={id}
+                  value={form.subjectId}
+                  onChange={(e) =>
+                    scheduleSave({ ...form, subjectId: e.target.value })
+                  }
                 >
-                  {d}
-                </button>
-              ))}
+                  {subjects.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {label(s)}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </FormField>
+            <FormField label={tp('classes')} id="req-class">
+              {(id) => (
+                <Select
+                  id={id}
+                  value={form.classId}
+                  onChange={(e) =>
+                    scheduleSave({ ...form, classId: e.target.value })
+                  }
+                >
+                  {classes.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {label(s)}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </FormField>
+            <FormField label={tp('boards')} id="req-board">
+              {(id) => (
+                <Select
+                  id={id}
+                  value={form.boardId}
+                  onChange={(e) =>
+                    scheduleSave({ ...form, boardId: e.target.value })
+                  }
+                >
+                  {boards.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {label(s)}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </FormField>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label={t('budgetMin')} id="req-bmin">
+                {(id) => (
+                  <Input
+                    id={id}
+                    type="number"
+                    value={form.budgetMin}
+                    onChange={(e) =>
+                      scheduleSave({
+                        ...form,
+                        budgetMin: Number(e.target.value),
+                      })
+                    }
+                  />
+                )}
+              </FormField>
+              <FormField label={t('budgetMax')} id="req-bmax">
+                {(id) => (
+                  <Input
+                    id={id}
+                    type="number"
+                    value={form.budgetMax}
+                    onChange={(e) =>
+                      scheduleSave({
+                        ...form,
+                        budgetMax: Number(e.target.value),
+                      })
+                    }
+                  />
+                )}
+              </FormField>
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <input
-              type="time"
-              className="rounded border px-3 py-2"
-              value={form.scheduleTime}
-              onChange={(e) => scheduleSave({ ...form, scheduleTime: e.target.value })}
-            />
-            <input
-              type="number"
-              className="rounded border px-3 py-2"
-              placeholder={t('duration')}
-              value={form.durationMins}
-              onChange={(e) =>
-                scheduleSave({ ...form, durationMins: Number(e.target.value) })
-              }
-            />
-          </div>
-          <input
-            className="w-full rounded border px-3 py-2"
-            placeholder={tp('pincode')}
-            value={form.pincode}
-            onChange={(e) => scheduleSave({ ...form, pincode: e.target.value })}
-          />
-          <input
-            className="w-full rounded border px-3 py-2"
-            placeholder={t('address')}
-            value={form.address}
-            onChange={(e) => scheduleSave({ ...form, address: e.target.value })}
-          />
-          <textarea
-            className="w-full rounded border px-3 py-2"
-            rows={3}
-            placeholder={t('notes')}
-            value={form.notes}
-            onChange={(e) => scheduleSave({ ...form, notes: e.target.value })}
-          />
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded bg-blue-600 px-4 py-2 text-white"
-          >
-            {tc('save')}
-          </button>
-        </form>
+            <FormField label={tp('online')} id="req-mode">
+              {(id) => (
+                <Select
+                  id={id}
+                  value={form.mode}
+                  onChange={(e) =>
+                    scheduleSave({ ...form, mode: e.target.value })
+                  }
+                >
+                  <option value="ONLINE">{tp('online')}</option>
+                  <option value="OFFLINE">{tp('offline')}</option>
+                  <option value="BOTH">{tc('both')}</option>
+                </Select>
+              )}
+            </FormField>
+            <div>
+              <p className="mb-2 text-sm font-medium text-ink">
+                {t('scheduleDays')}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {DAYS.map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => toggleDay(d)}
+                    className={`rounded-full px-3 py-1.5 text-sm font-medium transition ${
+                      form.scheduleDays.includes(d)
+                        ? 'bg-brand text-white'
+                        : 'bg-cream-dark/60 text-ink hover:bg-cream-dark'
+                    }`}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <FormField label={t('scheduleTime')} id="req-time">
+                {(id) => (
+                  <Input
+                    id={id}
+                    type="time"
+                    value={form.scheduleTime}
+                    onChange={(e) =>
+                      scheduleSave({ ...form, scheduleTime: e.target.value })
+                    }
+                  />
+                )}
+              </FormField>
+              <FormField label={t('duration')} id="req-duration">
+                {(id) => (
+                  <Input
+                    id={id}
+                    type="number"
+                    value={form.durationMins}
+                    onChange={(e) =>
+                      scheduleSave({
+                        ...form,
+                        durationMins: Number(e.target.value),
+                      })
+                    }
+                  />
+                )}
+              </FormField>
+            </div>
+            <FormField label={tp('pincode')} id="req-pin">
+              {(id) => (
+                <Input
+                  id={id}
+                  value={form.pincode}
+                  onChange={(e) =>
+                    scheduleSave({
+                      ...form,
+                      pincode: e.target.value,
+                      latitude: undefined,
+                      longitude: undefined,
+                    })
+                  }
+                  inputMode="numeric"
+                  maxLength={6}
+                />
+              )}
+            </FormField>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={async () => {
+                  setError('');
+                  const browser = await readBrowserPosition();
+                  if (browser) {
+                    scheduleSave({
+                      ...form,
+                      latitude: browser.latitude,
+                      longitude: browser.longitude,
+                    });
+                    setGeoHint('device');
+                    return;
+                  }
+                  if (/^\d{6}$/.test(form.pincode)) {
+                    try {
+                      const resolved = await resolveGeo({ pincode: form.pincode });
+                      scheduleSave({
+                        ...form,
+                        latitude: resolved.latitude,
+                        longitude: resolved.longitude,
+                      });
+                      setGeoHint(resolved.source);
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : 'Geocode failed');
+                    }
+                    return;
+                  }
+                  setError('Allow location access or enter a 6-digit pincode first');
+                }}
+              >
+                Use my location
+              </Button>
+              {form.latitude != null && form.longitude != null && (
+                <p className="text-xs text-ink-muted">
+                  {form.latitude.toFixed(5)}, {form.longitude.toFixed(5)}
+                  {geoHint ? ` (${geoHint})` : ''}
+                </p>
+              )}
+            </div>
+            <FormField label={t('address')} id="req-address">
+              {(id) => (
+                <Input
+                  id={id}
+                  value={form.address}
+                  onChange={(e) =>
+                    scheduleSave({ ...form, address: e.target.value })
+                  }
+                />
+              )}
+            </FormField>
+            <FormField label={t('notes')} id="req-notes">
+              {(id) => (
+                <Textarea
+                  id={id}
+                  rows={3}
+                  value={form.notes}
+                  onChange={(e) =>
+                    scheduleSave({ ...form, notes: e.target.value })
+                  }
+                />
+              )}
+            </FormField>
+            <Button type="submit" disabled={saving}>
+              {tc('save')}
+            </Button>
+          </form>
+        </Card>
       </main>
-    </>
+    </AppFrame>
   );
 }

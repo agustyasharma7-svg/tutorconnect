@@ -21,14 +21,19 @@ export function LanguageSwitcher() {
   };
 
   return (
-    <div className="flex gap-2 text-sm">
+    <div
+      className="inline-flex shrink-0 rounded-full bg-white/80 p-0.5 ring-1 ring-[#e6ddd0]"
+      role="group"
+    >
       {locales.map((l) => (
         <button
           key={l}
           type="button"
           onClick={() => switchLocale(l)}
-          className={`rounded px-2 py-1 uppercase ${
-            locale === l ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
+          className={`rounded-full px-2 py-1 text-[11px] font-medium uppercase tracking-wide sm:px-2.5 sm:text-xs ${
+            locale === l
+              ? 'bg-ink text-white'
+              : 'text-ink-muted'
           }`}
         >
           {l}

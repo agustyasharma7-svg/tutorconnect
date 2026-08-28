@@ -55,6 +55,8 @@ export class PaymentsService {
   }
 
   isMockMode(): boolean {
+    // Never allow mock payments in production (boot also hard-fails PAYMENTS_MOCK=true).
+    if (this.config.get('NODE_ENV') === 'production') return false;
     if (this.config.get('PAYMENTS_MOCK') === 'true') return true;
     if (this.config.get('PAYMENTS_MOCK') === 'false') return false;
     return !this.config.get('RAZORPAY_KEY_ID');
@@ -165,9 +167,13 @@ export class PaymentsService {
     let orderId: string;
     let mock = false;
 
-    if (this.isMockMode() || !this.razorpay) {
+    if (this.isMockMode()) {
       mock = true;
       orderId = `order_mock_${paymentId.replace(/-/g, '').slice(0, 14)}`;
+    } else if (!this.razorpay) {
+      throw new BadRequestException(
+        'Razorpay is not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET, or enable PAYMENTS_MOCK=true for local checkout',
+      );
     } else {
       const order = await this.razorpay.orders.create({
         amount: amountPaise,
@@ -238,8 +244,8 @@ export class PaymentsService {
   }
 
   async mockComplete(userId: string, dto: MockCompletePaymentDto) {
-    if (!this.isMockMode()) {
-      throw new BadRequestException('Mock payments are disabled');
+    if (this.config.get('NODE_ENV') === 'production' || !this.isMockMode()) {
+      throw new ForbiddenException('Mock payments are disabled');
     }
     const payment = await this.prisma.payment.findFirst({
       where: { id: dto.paymentId, payerId: userId },
@@ -371,21 +377,45 @@ export class PaymentsService {
       return this.serialize(paymentId);
     }
 
-    await this.prisma.payment.update({
-      where: { id: paymentId },
-      data: {
-        status: PaymentStatus.SUCCESS,
-        gatewayPaymentId: gateway.gatewayPaymentId,
-        gatewaySignature: gateway.gatewaySignature,
-      },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.payment.update({
+        where: { id: paymentId },
+        data: {
+          status: PaymentStatus.SUCCESS,
+          gatewayPaymentId: gateway.gatewayPaymentId,
+          gatewaySignature: gateway.gatewaySignature,
+        },
+      });
+
+      if (payment.type === PaymentType.REGISTRATION) {
+        await tx.tutor.update({
+          where: { id: payment.entityId },
+          data: { registrationFeeStatus: RegistrationFeeStatus.PAID },
+        });
+      } else if (payment.type === PaymentType.COMMISSION) {
+        const c = await tx.commission.findUniqueOrThrow({
+          where: { id: payment.entityId },
+        });
+        if (c.status !== CommissionStatus.PAID) {
+          await tx.commission.update({
+            where: { id: payment.entityId },
+            data: {
+              status: CommissionStatus.PAID,
+              paidAt: new Date(),
+            },
+          });
+          if (c.registrationGross > 0) {
+            await tx.tutor.update({
+              where: { id: c.tutorId },
+              data: { registrationFeeStatus: RegistrationFeeStatus.PAID },
+            });
+          }
+        }
+      }
     });
 
-    if (payment.type === PaymentType.REGISTRATION) {
-      await this.prisma.tutor.update({
-        where: { id: payment.entityId },
-        data: { registrationFeeStatus: RegistrationFeeStatus.PAID },
-      });
-    } else if (payment.type === PaymentType.COMMISSION) {
+    if (payment.type === PaymentType.COMMISSION) {
+      // Idempotent — runs liftPaymentRestrictionIfClear after commit
       await this.commissions.markPaid(payment.entityId);
     }
 

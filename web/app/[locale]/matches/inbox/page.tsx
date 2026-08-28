@@ -1,9 +1,9 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import { Alert, Button, ButtonLink, Card, PageHeader } from '@/components/ui';
 import { apiWithAuth, assetUrl } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
-import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -56,85 +56,94 @@ export default function InboxPage() {
   };
 
   return (
-    <>
-      <SiteHeader />
+    <AppFrame>
       <main className="mx-auto max-w-3xl px-4 py-10">
-        <h1 className="mb-4 text-2xl font-bold">{t('inboxTitle')}</h1>
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-        {message && <p className="mb-3 text-sm text-green-700">{message}</p>}
+        <PageHeader title={t('inboxTitle')} />
+        {error && <Alert className="mb-3">{error}</Alert>}
+        {message && <Alert tone="success" className="mb-3">{message}</Alert>}
         <ul className="space-y-3">
           {rows.map((row) => (
-            <li key={row.id} className="rounded-lg bg-white p-4 shadow">
-              <div className="flex gap-3">
-                {row.tutor.photoUrl && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={assetUrl(row.tutor.photoUrl)}
-                    alt=""
-                    className="h-14 w-14 rounded object-cover"
-                  />
-                )}
-                <div className="flex-1">
-                  <p className="font-medium">{row.tutor.name}</p>
-                  <p className="text-sm text-gray-600">
-                    {tc('status')}: {row.status} · {t('score')}: {row.score}
-                  </p>
-                  {row.application?.proposedFee != null && (
-                    <p className="text-sm">
-                      {t('proposedFee')}: ₹{row.application.proposedFee}
+            <li key={row.id}>
+              <Card className="p-4">
+                <div className="flex gap-3">
+                  {row.tutor.photoUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={assetUrl(row.tutor.photoUrl)}
+                      alt={row.tutor.name}
+                      className="h-14 w-14 rounded object-cover"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <p className="font-medium text-ink">{row.tutor.name}</p>
+                    <p className="text-sm text-ink-muted">
+                      {tc('status')}: {row.status} · {t('score')}: {row.score}
                     </p>
-                  )}
-                  {row.application?.message && (
-                    <p className="text-sm text-gray-600">{row.application.message}</p>
-                  )}
-                  <div className="mt-2 flex flex-wrap gap-3 text-sm">
-                    <Link
-                      href={`/${locale}/tutors/${row.tutor.id}`}
-                      className="text-blue-600"
-                    >
-                      {tc('view')}
-                    </Link>
-                    {['APPLIED', 'INVITED'].includes(row.status) && (
-                      <>
-                        <button
-                          type="button"
-                          className="text-blue-600"
-                          onClick={() => act(row.id, 'shortlist')}
-                        >
-                          {tc('shortlist')}
-                        </button>
-                        <button
-                          type="button"
-                          className="text-red-600"
-                          onClick={() => act(row.id, 'reject')}
-                        >
-                          {tc('reject')}
-                        </button>
-                      </>
+                    {row.application?.proposedFee != null && (
+                      <p className="text-sm">
+                        {t('proposedFee')}: ₹{row.application.proposedFee}
+                      </p>
                     )}
-                    {row.status === 'SHORTLISTED' && (
-                      <>
-                        <Link
-                          href={`/${locale}/demos?matchId=${row.id}`}
-                          className="text-blue-600"
-                        >
-                          {t('bookDemo')}
-                        </Link>
-                        <Link
-                          href={`/${locale}/agreements?matchId=${row.id}`}
-                          className="text-blue-600"
-                        >
-                          {t('generateAgreement')}
-                        </Link>
-                      </>
+                    {row.application?.message && (
+                      <p className="text-sm text-ink-muted">
+                        {row.application.message}
+                      </p>
                     )}
+                    <div className="mt-2 flex flex-wrap gap-3 text-sm">
+                      <ButtonLink
+                        href={`/${locale}/tutors/${row.tutor.id}`}
+                        variant="link"
+                        size="sm"
+                      >
+                        {tc('view')}
+                      </ButtonLink>
+                      {['APPLIED', 'INVITED'].includes(row.status) && (
+                        <>
+                          <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            onClick={() => act(row.id, 'shortlist')}
+                          >
+                            {tc('shortlist')}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            className="text-danger"
+                            onClick={() => act(row.id, 'reject')}
+                          >
+                            {tc('reject')}
+                          </Button>
+                        </>
+                      )}
+                      {row.status === 'SHORTLISTED' && (
+                        <>
+                          <ButtonLink
+                            href={`/${locale}/demos?matchId=${row.id}`}
+                            variant="link"
+                            size="sm"
+                          >
+                            {t('bookDemo')}
+                          </ButtonLink>
+                          <ButtonLink
+                            href={`/${locale}/agreements?matchId=${row.id}`}
+                            variant="link"
+                            size="sm"
+                          >
+                            {t('generateAgreement')}
+                          </ButtonLink>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              </Card>
             </li>
           ))}
         </ul>
       </main>
-    </>
+    </AppFrame>
   );
 }

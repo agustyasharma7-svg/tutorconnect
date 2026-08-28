@@ -1,6 +1,18 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import {
+  Alert,
+  Button,
+  ButtonLink,
+  Card,
+  EmptyState,
+  FormField,
+  Input,
+  PageHeader,
+  Select,
+  Textarea,
+} from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import Link from 'next/link';
@@ -126,192 +138,212 @@ export default function AgreementsPage() {
   };
 
   return (
-    <>
-      <SiteHeader />
+    <AppFrame>
       <main className="mx-auto max-w-3xl px-4 py-10">
-        <h1 className="mb-4 text-2xl font-bold">{t('title')}</h1>
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+        <PageHeader title={t('title')} />
+        {error && <Alert className="mb-3">{error}</Alert>}
 
         {role === 'STUDENT' && matchId && (
-          <form onSubmit={generate} className="mb-6 space-y-3 rounded-lg bg-white p-4 shadow">
-            <label className="block text-sm">
-              {t('fee')}
-              <input
-                type="number"
-                className="mt-1 w-full rounded border px-3 py-2"
-                value={fee}
-                onChange={(e) => setFee(Number(e.target.value))}
-              />
-            </label>
-            <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-white">
-              Generate
-            </button>
-          </form>
+          <Card className="mb-6">
+            <form onSubmit={generate} className="space-y-3">
+              <FormField label={t('fee')} id="agr-fee">
+                {(id) => (
+                  <Input
+                    id={id}
+                    type="number"
+                    value={fee}
+                    onChange={(e) => setFee(Number(e.target.value))}
+                  />
+                )}
+              </FormField>
+              <Button type="submit">{t('generate')}</Button>
+            </form>
+          </Card>
         )}
 
-        {!rows.length && <p className="text-gray-600">{t('empty')}</p>}
-        <ul className="mb-8 space-y-3">
-          {rows.map((r) => (
-            <li key={r.id} className="rounded-lg bg-white p-4 shadow">
-              <button type="button" className="w-full text-left" onClick={() => open(r.id)}>
-                <p className="font-medium">
-                  {r.studentName} ↔ {r.tutorName}
-                </p>
-                <p className="text-sm text-gray-600">
-                  ₹{r.monthlyFee} · {r.status}
-                </p>
-              </button>
-            </li>
-          ))}
-        </ul>
+        {!rows.length ? (
+          <EmptyState title={t('empty')} />
+        ) : (
+          <ul className="mb-8 space-y-3">
+            {rows.map((r) => (
+              <li key={r.id}>
+                <Card className="p-4">
+                  <button
+                    type="button"
+                    className="w-full text-left"
+                    onClick={() => open(r.id)}
+                  >
+                    <p className="font-medium text-ink">
+                      {r.studentName} ↔ {r.tutorName}
+                    </p>
+                    <p className="text-sm text-ink-muted">
+                      ₹{r.monthlyFee} · {r.status}
+                    </p>
+                  </button>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {selected && (
-          <div className="space-y-3 rounded-lg bg-white p-6 shadow">
-            <h2 className="text-xl font-bold">{t('detail')}</h2>
-            <p>
+          <Card className="space-y-3">
+            <h2 className="text-xl font-semibold text-ink">{t('detail')}</h2>
+            <p className="text-ink">
               {selected.studentName} ↔ {selected.tutorName}
             </p>
-            <p>
+            <p className="text-ink">
               {t('fee')}: ₹{selected.monthlyFee} · {selected.status}
             </p>
             {selected.requirementStatus && (
-              <p className="text-sm text-gray-600">
-                Requirement: {selected.requirementStatus}
+              <p className="text-sm text-ink-muted">
+                {t('requirement')}: {selected.requirementStatus}
               </p>
             )}
-            <pre className="whitespace-pre-wrap rounded bg-gray-50 p-3 text-sm">
+            <pre className="whitespace-pre-wrap rounded-control bg-cream p-3 text-sm text-ink">
               {selected.termsText}
             </pre>
-            <p className="text-sm">
+            <p className="text-sm text-ink-muted">
               {t('studentSigned')}: {selected.studentSignedAt ?? '—'}
             </p>
-            <p className="text-sm">
+            <p className="text-sm text-ink-muted">
               {t('tutorSigned')}: {selected.tutorSignedAt ?? '—'}
             </p>
             {!!selected.occupiedSlots?.length && (
               <div>
-                <p className="font-medium">{t('slots')}</p>
-                <ul className="text-sm text-gray-600">
+                <p className="font-medium text-ink">{t('slots')}</p>
+                <ul className="text-sm text-ink-muted">
                   {selected.occupiedSlots.map((s) => (
                     <li key={s.id}>
                       {new Date(s.startAt).toLocaleString()} ({s.status})
                       {role === 'STUDENT' && s.status === 'OCCUPIED' && (
-                        <button
+                        <Button
                           type="button"
-                          className="ml-2 text-red-600"
+                          variant="link"
+                          size="sm"
+                          className="ml-2 text-danger"
                           onClick={() =>
                             apiWithAuth(`/schedules/slots/${s.id}/release`, token, {
                               method: 'POST',
                             }).then(() => open(selected.id))
                           }
                         >
-                          Release
-                        </button>
+                          {t('release')}
+                        </Button>
                       )}
                     </li>
                   ))}
                 </ul>
               </div>
             )}
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2">
               {selected.status !== 'ACTIVE' &&
                 selected.status !== 'COMPLETED' &&
                 selected.status !== 'CANCELLED' && (
-                  <button
-                    type="button"
-                    onClick={sign}
-                    className="rounded bg-blue-600 px-4 py-2 text-white"
-                  >
-                    {t('sign')}
-                  </button>
+                  <Button type="button" onClick={sign}>
+                    {selected.studentSignedAt && selected.tutorSignedAt
+                      ? t('retryActivation')
+                      : t('sign')}
+                  </Button>
                 )}
               {selected.pdfUrl && (
-                <a
+                <ButtonLink
                   href={selected.pdfUrl}
+                  variant="secondary"
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded border px-4 py-2"
                 >
                   {t('download')}
-                </a>
+                </ButtonLink>
               )}
               {(selected.status === 'ACTIVE' || selected.status === 'COMPLETED') && (
-                <Link
+                <ButtonLink
                   href={`/${locale}/chat/${selected.id}`}
-                  className="rounded bg-emerald-700 px-4 py-2 text-white"
+                  className="bg-emerald-700 hover:bg-emerald-800"
                 >
                   {tchat('openChat')}
-                </Link>
+                </ButtonLink>
               )}
               {(selected.status === 'ACTIVE' || selected.status === 'COMPLETED') && (
-                <Link
+                <ButtonLink
                   href={`/${locale}/disputes?agreementId=${selected.id}`}
-                  className="rounded border px-4 py-2"
+                  variant="secondary"
                 >
                   {td('disputes')}
-                </Link>
+                </ButtonLink>
               )}
-              {selected.requirementId && selected.status === 'ACTIVE' && role === 'STUDENT' && (
-                <Link
-                  href={`/${locale}/requirements/${selected.requirementId}`}
-                  className="rounded border px-4 py-2"
-                >
-                  Requirement
-                </Link>
-              )}
+              {selected.requirementId &&
+                selected.status === 'ACTIVE' &&
+                role === 'STUDENT' && (
+                  <ButtonLink
+                    href={`/${locale}/requirements/${selected.requirementId}`}
+                    variant="secondary"
+                  >
+                    {t('requirement')}
+                  </ButtonLink>
+                )}
             </div>
 
             {ratingInfo && (
-              <div className="mt-4 border-t pt-4">
-                <h3 className="font-medium">{tr('title')}</h3>
+              <div className="mt-4 border-t border-cream-dark pt-4">
+                <h3 className="font-medium text-ink">{tr('title')}</h3>
                 {ratingInfo.requirementStatus !== 'COMPLETED' && (
-                  <p className="mt-1 text-sm text-gray-600">{tr('gate')}</p>
+                  <p className="mt-1 text-sm text-ink-muted">{tr('gate')}</p>
                 )}
-                {ratingInfo.requirementStatus === 'COMPLETED' && ratingInfo.myRating && (
-                  <p className="mt-1 text-sm text-green-700">
-                    {tr('already')}: {ratingInfo.myRating.score} ★
-                    {ratingInfo.myRating.review ? ` — ${ratingInfo.myRating.review}` : ''}
-                  </p>
-                )}
-                {ratingInfo.requirementStatus === 'COMPLETED' && !ratingInfo.myRating && (
-                  <form onSubmit={submitRating} className="mt-3 space-y-2">
-                    <label className="block text-sm">
-                      {tr('score')}
-                      <select
-                        className="mt-1 w-full rounded border px-3 py-2"
-                        value={score}
-                        onChange={(e) => setScore(Number(e.target.value))}
-                      >
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <option key={n} value={n}>
-                            {n}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <textarea
-                      className="w-full rounded border px-3 py-2"
-                      rows={2}
-                      placeholder={tr('review')}
-                      value={review}
-                      onChange={(e) => setReview(e.target.value)}
-                    />
-                    <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-white">
-                      {tr('submit')}
-                    </button>
-                  </form>
-                )}
+                {ratingInfo.requirementStatus === 'COMPLETED' &&
+                  ratingInfo.myRating && (
+                    <Alert tone="success" className="mt-2">
+                      {tr('already')}: {ratingInfo.myRating.score} ★
+                      {ratingInfo.myRating.review
+                        ? ` — ${ratingInfo.myRating.review}`
+                        : ''}
+                    </Alert>
+                  )}
+                {ratingInfo.requirementStatus === 'COMPLETED' &&
+                  !ratingInfo.myRating && (
+                    <form onSubmit={submitRating} className="mt-3 space-y-2">
+                      <FormField label={tr('score')} id="rating-score">
+                        {(id) => (
+                          <Select
+                            id={id}
+                            value={score}
+                            onChange={(e) => setScore(Number(e.target.value))}
+                          >
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <option key={n} value={n}>
+                                {n}
+                              </option>
+                            ))}
+                          </Select>
+                        )}
+                      </FormField>
+                      <FormField label={tr('review')} id="rating-review">
+                        {(id) => (
+                          <Textarea
+                            id={id}
+                            rows={2}
+                            value={review}
+                            onChange={(e) => setReview(e.target.value)}
+                          />
+                        )}
+                      </FormField>
+                      <Button type="submit">{tr('submit')}</Button>
+                    </form>
+                  )}
               </div>
             )}
-          </div>
+          </Card>
         )}
-        <Link
-          href={`/${locale}/dashboard/${role.toLowerCase()}`}
-          className="mt-6 inline-block text-sm text-blue-600"
-        >
-          {tc('back')}
-        </Link>
+
+        {role && (
+          <Link
+            href={`/${locale}/dashboard/${role.toLowerCase()}`}
+            className="mt-6 inline-block text-sm font-medium text-brand hover:underline"
+          >
+            {tc('back')}
+          </Link>
+        )}
       </main>
-    </>
+    </AppFrame>
   );
 }

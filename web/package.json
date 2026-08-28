@@ -11,6 +11,9 @@
     "audit:deps": "npm audit --omit=dev"
   },
   "dependencies": {
+    "@sentry/nextjs": "^10.71.0",
+    "axios": "^1.20.0",
+    "framer-motion": "^11.18.2",
     "next": "14.2.35",
     "next-intl": "^3.26.3",
     "react": "^18",

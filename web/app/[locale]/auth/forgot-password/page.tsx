@@ -1,6 +1,14 @@
 'use client';
 
 import { SiteHeader } from '@/components/SiteHeader';
+import {
+  Alert,
+  Button,
+  Card,
+  FormField,
+  Input,
+  PageHeader,
+} from '@/components/ui';
 import { api } from '@/lib/api';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -58,65 +66,68 @@ export default function ForgotPasswordPage() {
     <>
       <SiteHeader />
       <main className="mx-auto max-w-md px-4 py-12">
-        <h1 className="mb-6 text-2xl font-bold">{t('forgotTitle')}</h1>
+        <PageHeader title={t('forgotTitle')} />
         {step === 'email' ? (
-          <form onSubmit={sendOtp} className="space-y-4 rounded-lg bg-white p-6 shadow">
-            <div>
-              <label className="mb-1 block text-sm font-medium">{tc('email')}</label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded border px-3 py-2"
-              />
-            </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded bg-blue-600 py-2 text-white disabled:opacity-50"
-            >
-              {loading ? tc('loading') : t('sendOtp')}
-            </button>
-          </form>
+          <Card>
+            <form onSubmit={sendOtp} className="space-y-4">
+              <FormField label={tc('email')} id="forgot-email">
+                {(id) => (
+                  <Input
+                    id={id}
+                    type="email"
+                    required
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                )}
+              </FormField>
+              {error && <Alert>{error}</Alert>}
+              <Button type="submit" disabled={loading} fullWidth>
+                {loading ? tc('loading') : t('sendOtp')}
+              </Button>
+            </form>
+          </Card>
         ) : (
-          <form onSubmit={reset} className="space-y-4 rounded-lg bg-white p-6 shadow">
-            <p className="text-sm text-gray-600">{email}</p>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{t('otp')}</label>
-              <input
-                required
-                pattern="\d{6}"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                className="w-full rounded border px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium">{tc('password')}</label>
-              <input
-                type="password"
-                required
-                minLength={8}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded border px-3 py-2"
-              />
-            </div>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            {message && <p className="text-sm text-green-700">{message}</p>}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded bg-blue-600 py-2 text-white disabled:opacity-50"
-            >
-              {loading ? tc('loading') : t('resetPassword')}
-            </button>
-          </form>
+          <Card>
+            <form onSubmit={reset} className="space-y-4">
+              <p className="text-sm text-ink-muted">{email}</p>
+              <FormField label={t('otp')} id="forgot-otp">
+                {(id) => (
+                  <Input
+                    id={id}
+                    required
+                    pattern="\d{6}"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value)}
+                  />
+                )}
+              </FormField>
+              <FormField label={tc('password')} id="forgot-password">
+                {(id) => (
+                  <Input
+                    id={id}
+                    type="password"
+                    required
+                    minLength={8}
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                )}
+              </FormField>
+              {error && <Alert>{error}</Alert>}
+              {message && <Alert tone="success">{message}</Alert>}
+              <Button type="submit" disabled={loading} fullWidth>
+                {loading ? tc('loading') : t('resetPassword')}
+              </Button>
+            </form>
+          </Card>
         )}
         <p className="mt-4 text-center text-sm">
-          <Link href={`/${locale}/auth/login`} className="text-blue-600">
+          <Link href={`/${locale}/auth/login`} className="text-brand hover:underline">
             {tc('back')}
           </Link>
         </p>

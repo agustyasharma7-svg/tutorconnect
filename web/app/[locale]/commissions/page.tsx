@@ -1,9 +1,15 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import {
+  Alert,
+  ButtonLink,
+  Card,
+  EmptyState,
+  PageHeader,
+} from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -64,65 +70,77 @@ export default function CommissionsPage() {
   };
 
   return (
-    <>
-      <SiteHeader />
+    <AppFrame>
       <main className="mx-auto max-w-3xl px-4 py-10">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold">{t('commissionsTitle')}</h1>
-          <Link
-            href={`/${locale}/payments/history`}
-            className="text-sm text-blue-600 underline"
-          >
-            {t('history')}
-          </Link>
-        </div>
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-        {!rows.length && <p className="text-gray-600">{t('commissionsEmpty')}</p>}
-        <ul className="mb-8 space-y-3">
-          {rows.map((r) => (
-            <li key={r.id} className="rounded-lg bg-white p-4 shadow">
-              <button type="button" className="w-full text-left" onClick={() => open(r.id)}>
-                <p className="font-medium">
-                  {r.studentName ?? r.id.slice(0, 8)} — ₹{r.grossAmount}
-                </p>
-                <p className="text-sm text-gray-600">
-                  {tc('status')}: {r.status}
-                </p>
-              </button>
-              {(r.status === 'GENERATED' || r.status === 'OVERDUE') && (
-                <Link
-                  href={`/${locale}/payments/commission/${r.id}`}
-                  className="mt-2 inline-block rounded bg-blue-600 px-3 py-1.5 text-sm text-white"
-                >
-                  {t('payNow')}
-                </Link>
-              )}
-            </li>
-          ))}
-        </ul>
+        <PageHeader
+          title={t('commissionsTitle')}
+          actions={
+            <ButtonLink
+              href={`/${locale}/payments/history`}
+              variant="link"
+              size="sm"
+            >
+              {t('history')}
+            </ButtonLink>
+          }
+        />
+        {error && <Alert className="mb-3">{error}</Alert>}
+        {!rows.length ? (
+          <EmptyState title={t('commissionsEmpty')} />
+        ) : (
+          <ul className="mb-8 space-y-3">
+            {rows.map((r) => (
+              <li key={r.id}>
+                <Card className="p-4">
+                  <button
+                    type="button"
+                    className="w-full text-left"
+                    onClick={() => open(r.id)}
+                  >
+                    <p className="font-medium text-ink">
+                      {r.studentName ?? r.id.slice(0, 8)} — ₹{r.grossAmount}
+                    </p>
+                    <p className="text-sm text-ink-muted">
+                      {tc('status')}: {r.status}
+                    </p>
+                  </button>
+                  {(r.status === 'GENERATED' || r.status === 'OVERDUE') && (
+                    <ButtonLink
+                      href={`/${locale}/payments/commission/${r.id}`}
+                      size="sm"
+                      className="mt-2"
+                    >
+                      {t('payNow')}
+                    </ButtonLink>
+                  )}
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {selected && (
-          <section className="rounded-lg bg-white p-5 shadow">
-            <h2 className="mb-3 text-lg font-semibold">{t('invoice')}</h2>
-            <p className="text-sm text-gray-600">
+          <Card>
+            <h2 className="mb-3 text-lg font-semibold text-ink">{t('invoice')}</h2>
+            <p className="text-sm text-ink-muted">
               {t('monthlyFee')}: ₹{selected.monthlyFee}
             </p>
             <ul className="mt-3 space-y-2 text-sm">
               {selected.lineItems.map((li) => (
-                <li key={li.label} className="border-b pb-2">
-                  <p className="font-medium">{li.label}</p>
-                  <p>
+                <li key={li.label} className="border-b border-cream-dark pb-2">
+                  <p className="font-medium text-ink">{li.label}</p>
+                  <p className="text-ink-muted">
                     {t('gross')}: ₹{li.gross} · {t('taxable')}: ₹{li.taxable} ·{' '}
                     {t('gst')}: ₹{li.gst}
                   </p>
                 </li>
               ))}
             </ul>
-            <p className="mt-3">
+            <p className="mt-3 text-ink">
               {t('taxable')}: ₹{selected.taxableAmount} · CGST ₹{selected.cgst} ·
               SGST ₹{selected.sgst}
             </p>
-            <p className="mt-1 text-lg font-semibold">
+            <p className="mt-1 text-lg font-semibold text-ink">
               {t('totalDue')}: ₹{selected.grossAmount}
             </p>
             {selected.invoicePdfUrl && (
@@ -130,14 +148,14 @@ export default function CommissionsPage() {
                 href={selected.invoicePdfUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="mt-3 inline-block text-blue-600 underline"
+                className="mt-3 inline-block text-sm font-medium text-brand hover:underline"
               >
                 {t('downloadInvoice')}
               </a>
             )}
-          </section>
+          </Card>
         )}
       </main>
-    </>
+    </AppFrame>
   );
 }

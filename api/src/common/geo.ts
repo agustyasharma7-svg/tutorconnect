@@ -1,12 +1,33 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 
-/** Deterministic stub geocode until Maps API is wired. */
-export function geocodePincode(pincode: string): { latitude: number; longitude: number } {
+/**
+ * Deterministic stub geocode (Delhi-area box) used when no Maps API key
+ * and the client did not send lat/lng.
+ */
+export function geocodePincodeStub(pincode: string): {
+  latitude: number;
+  longitude: number;
+} {
   const n = Number(pincode.slice(0, 3)) || 110;
   return {
     latitude: 28.4 + (n % 50) / 100,
     longitude: 77.0 + (n % 40) / 100,
   };
+}
+
+/** @deprecated Use geocodePincodeStub or GeoService.resolveCoordinates */
+export const geocodePincode = geocodePincodeStub;
+
+/** Rough India bounding box for accepting client / Maps coordinates. */
+export function isCoordsInIndia(latitude: number, longitude: number): boolean {
+  return (
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    latitude >= 6 &&
+    latitude <= 38 &&
+    longitude >= 68 &&
+    longitude <= 98
+  );
 }
 
 type DistanceRow = { id: string; distance_km: number };
@@ -37,7 +58,7 @@ export async function distancesFromRequirement(
 }
 
 /**
- * Tutors within their teaching radius of an origin point (search by pincode).
+ * Tutors within their teaching radius of an origin point (search by pincode / coords).
  */
 export async function distancesFromPoint(
   prisma: PrismaClient,

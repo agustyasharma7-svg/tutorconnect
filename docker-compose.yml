@@ -17,6 +17,11 @@ services:
       timeout: 5s
       retries: 10
 
+  # Local DX: Redis published on 6379 without AUTH.
+  # Staging/prod: remove ports mapping; use Docker network only; enable requirepass:
+  #   command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+  #   healthcheck: redis-cli -a $$REDIS_PASSWORD ping
+  #   REDIS_URL=redis://:PASSWORD@redis:6379
   redis:
     image: redis:7-alpine
     container_name: tutorconnect-redis

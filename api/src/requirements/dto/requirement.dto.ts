@@ -3,6 +3,7 @@ import {
   IsArray,
   IsEnum,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   Matches,
@@ -10,6 +11,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { RequirementMode, WeekDay } from '@prisma/client';
 
 export class UpsertRequirementDto {
@@ -60,6 +62,20 @@ export class UpsertRequirementDto {
   @IsString()
   @MaxLength(300)
   address?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(6)
+  @Max(38)
+  latitude?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(68)
+  @Max(98)
+  longitude?: number;
 
   @IsOptional()
   @IsString()
@@ -122,6 +138,20 @@ export class UpdateRequirementDto {
   @IsString()
   @MaxLength(300)
   address?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(6)
+  @Max(38)
+  latitude?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(68)
+  @Max(98)
+  longitude?: number;
 
   @IsOptional()
   @IsString()

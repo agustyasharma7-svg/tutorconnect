@@ -1,6 +1,7 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import {
   AgreementStatus,
+  Prisma,
   SlotSource,
   SlotStatus,
   TeachingMode,
@@ -141,6 +142,7 @@ export class SchedulesService {
       mode?: TeachingMode;
     }[],
     weeks = 4,
+    db: Prisma.TransactionClient | PrismaService = this.prisma,
   ) {
     const created = [];
     const now = new Date();
@@ -152,13 +154,12 @@ export class SchedulesService {
           endAt = new Date(endAt.getTime() + 24 * 60 * 60 * 1000);
         }
         if (startAt < now) continue;
-        // Skip blocked exception dates / conflicts instead of failing whole agreement
         try {
           await this.assertNoConflict(tutorId, startAt, endAt);
         } catch {
           continue;
         }
-        const slot = await this.prisma.scheduleSlot.create({
+        const slot = await db.scheduleSlot.create({
           data: {
             tutorId,
             startAt,
@@ -236,8 +237,7 @@ export class SchedulesService {
   }
 
   async resolveStudentTutorId(studentUserId: string, tutorId?: string) {
-    if (tutorId) return tutorId;
-    const agr = await this.prisma.agreement.findFirst({
+    const allowed = await this.prisma.agreement.findMany({
       where: {
         status: {
           in: [AgreementStatus.ACTIVE, AgreementStatus.PENDING_TUTOR_SIGN],
@@ -247,7 +247,16 @@ export class SchedulesService {
       include: { match: true },
       orderBy: { createdAt: 'desc' },
     });
-    return agr?.match.tutorId ?? null;
+    const allowedTutorIds = new Set(allowed.map((a) => a.match.tutorId));
+    if (tutorId) {
+      if (!allowedTutorIds.has(tutorId)) {
+        throw new ForbiddenException(
+          'No active agreement with this tutor',
+        );
+      }
+      return tutorId;
+    }
+    return allowed[0]?.match.tutorId ?? null;
   }
 
   async calendar(tutorId: string, from: Date, to: Date) {

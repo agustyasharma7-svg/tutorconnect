@@ -2,12 +2,14 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import {
   AgreementStatus,
   MatchStatus,
   RequirementStatus,
+  SlotStatus,
   TeachingMode,
   UserRole,
   WeekDay,
@@ -32,6 +34,8 @@ type ScheduleRow = {
 
 @Injectable()
 export class AgreementsService {
+  private readonly logger = new Logger(AgreementsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
@@ -191,13 +195,20 @@ export class AgreementsService {
       },
     });
     if (!a) throw new NotFoundException('Agreement not found');
+    const pdfUrl =
+      a.pdfStorageKey
+        ? this.cloudinary.signedUrl(a.pdfStorageKey, {
+            resourceType: 'raw',
+            expiresInSeconds: 600,
+          })
+        : a.pdfUrl;
     return {
       id: a.id,
       status: a.status,
       monthlyFee: a.monthlyFee,
       scheduleJson: a.scheduleJson,
       termsText: a.termsText,
-      pdfUrl: a.pdfUrl,
+      pdfUrl,
       studentSignedAt: a.studentSignedAt,
       tutorSignedAt: a.tutorSignedAt,
       studentName: a.match.requirement.student.user.name,
@@ -255,6 +266,19 @@ export class AgreementsService {
     });
     if (!a) throw new NotFoundException('Agreement not found');
 
+    // Recover stuck agreements: both signed but activate() failed before ACTIVE.
+    if (
+      a.studentSignedAt &&
+      a.tutorSignedAt &&
+      a.status !== AgreementStatus.ACTIVE &&
+      a.status !== AgreementStatus.COMPLETED &&
+      a.status !== AgreementStatus.CANCELLED
+    ) {
+      await this.assertCanAccessAgreement(userId, role, a);
+      await this.activate(id);
+      return this.serialize(id);
+    }
+
     if (role === UserRole.STUDENT) {
       const { student } = await this.students.ensureProfile(userId);
       if (a.match.requirement.studentId !== student.id) throw new ForbiddenException();
@@ -268,14 +292,13 @@ export class AgreementsService {
       ) {
         throw new BadRequestException('Cannot sign in current status');
       }
+      // Never set ACTIVE here — only activate() commits ACTIVE after PDF + slots.
       await this.prisma.agreement.update({
         where: { id },
         data: {
           studentSignedAt: new Date(),
           studentSignIp: ip,
-          status: a.tutorSignedAt
-            ? AgreementStatus.ACTIVE
-            : AgreementStatus.PENDING_TUTOR_SIGN,
+          status: AgreementStatus.PENDING_TUTOR_SIGN,
         },
       });
     } else if (role === UserRole.TUTOR) {
@@ -291,7 +314,7 @@ export class AgreementsService {
           tutorSignedAt: new Date(),
           tutorSignIp: ip,
           status: a.studentSignedAt
-            ? AgreementStatus.ACTIVE
+            ? AgreementStatus.PENDING_TUTOR_SIGN
             : AgreementStatus.PENDING_STUDENT_SIGN,
         },
       });
@@ -312,7 +335,8 @@ export class AgreementsService {
         },
       },
     });
-    if (refreshed.status === AgreementStatus.ACTIVE) {
+
+    if (refreshed.studentSignedAt && refreshed.tutorSignedAt) {
       await this.activate(id);
     } else {
       await this.audit.log({
@@ -322,14 +346,15 @@ export class AgreementsService {
         entityId: id,
         metadata: { role },
       });
-      // Notify the other party that one signature is in
       if (role === UserRole.STUDENT) {
         void this.mail
           .sendAgreementSigned(refreshed.match.tutor.user.email, {
             name: refreshed.match.tutor.user.name,
             signerRole: 'Student',
           })
-          .catch(() => undefined);
+          .catch((err) =>
+            this.logger.warn(`Agreement signed email failed: ${String(err)}`),
+          );
       } else {
         void this.mail
           .sendAgreementSigned(
@@ -339,13 +364,40 @@ export class AgreementsService {
               signerRole: 'Tutor',
             },
           )
-          .catch(() => undefined);
+          .catch((err) =>
+            this.logger.warn(`Agreement signed email failed: ${String(err)}`),
+          );
       }
     }
 
     return this.serialize(id);
   }
 
+  private async assertCanAccessAgreement(
+    userId: string,
+    role: UserRole,
+    a: {
+      match: {
+        tutorId: string;
+        requirement: { studentId: string };
+      };
+    },
+  ) {
+    if (role === UserRole.STUDENT) {
+      const { student } = await this.students.ensureProfile(userId);
+      if (a.match.requirement.studentId !== student.id) throw new ForbiddenException();
+    } else if (role === UserRole.TUTOR) {
+      const { tutor } = await this.tutors.ensureProfile(userId);
+      if (a.match.tutorId !== tutor.id) throw new ForbiddenException();
+    } else if (role !== UserRole.ADMIN) {
+      throw new ForbiddenException();
+    }
+  }
+
+  /**
+   * Idempotent activation: PDF + slots + ACTIVE happen together.
+   * Commission is awaited so revenue rows are not silently dropped.
+   */
   private async activate(agreementId: string) {
     const a = await this.prisma.agreement.findUniqueOrThrow({
       where: { id: agreementId },
@@ -364,27 +416,53 @@ export class AgreementsService {
       },
     });
 
-    const schedule = a.scheduleJson as ScheduleRow[];
-    await this.schedules.occupyAgreementSlots(
-      a.match.tutorId,
-      a.id,
-      schedule,
-      4,
-    );
+    if (!a.studentSignedAt || !a.tutorSignedAt) {
+      throw new BadRequestException('Both signatures required before activation');
+    }
+    if (
+      a.status === AgreementStatus.COMPLETED ||
+      a.status === AgreementStatus.CANCELLED
+    ) {
+      return;
+    }
 
-    const pdf = await this.buildPdf(a);
-    const uploaded = await this.cloudinary.uploadRawPdf(
-      pdf,
-      `agreement-${a.id}.pdf`,
-      'tutorconnect/agreements',
-    );
+    if (a.status === AgreementStatus.ACTIVE && a.pdfStorageKey) {
+      await this.commissions.generateForAgreement(a.id);
+      return;
+    }
+
+    const schedule = a.scheduleJson as ScheduleRow[];
+
+    let pdfPublicId = a.pdfStorageKey;
+    if (!pdfPublicId) {
+      const pdf = await this.buildPdf(a);
+      const uploaded = await this.cloudinary.uploadRawPdf(
+        pdf,
+        `agreement-${a.id}.pdf`,
+        'tutorconnect/agreements',
+      );
+      pdfPublicId = uploaded.public_id;
+    }
+
+    const existingSlots = await this.prisma.scheduleSlot.count({
+      where: { agreementId: a.id, status: SlotStatus.OCCUPIED },
+    });
 
     await this.prisma.$transaction(async (tx) => {
+      if (existingSlots === 0) {
+        await this.schedules.occupyAgreementSlots(
+          a.match.tutorId,
+          a.id,
+          schedule,
+          4,
+          tx,
+        );
+      }
       await tx.agreement.update({
         where: { id: a.id },
         data: {
-          pdfUrl: uploaded.secure_url,
-          pdfStorageKey: uploaded.public_id,
+          pdfUrl: pdfPublicId,
+          pdfStorageKey: pdfPublicId,
           status: AgreementStatus.ACTIVE,
         },
       });
@@ -402,12 +480,16 @@ export class AgreementsService {
       .sendAgreementActive(a.match.requirement.student.user.email, {
         name: a.match.requirement.student.user.name,
       })
-      .catch(() => undefined);
+      .catch((err) =>
+        this.logger.warn(`Agreement active email (student) failed: ${String(err)}`),
+      );
     void this.mail
       .sendAgreementActive(a.match.tutor.user.email, {
         name: a.match.tutor.user.name,
       })
-      .catch(() => undefined);
+      .catch((err) =>
+        this.logger.warn(`Agreement active email (tutor) failed: ${String(err)}`),
+      );
 
     await this.audit.log({
       action: 'AGREEMENT_ACTIVE',
@@ -415,7 +497,7 @@ export class AgreementsService {
       entityId: a.id,
     });
 
-    void this.commissions.generateForAgreement(a.id).catch(() => undefined);
+    await this.commissions.generateForAgreement(a.id);
   }
 
   private async buildPdf(a: {

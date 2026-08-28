@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   Matches,
@@ -57,4 +58,18 @@ export class SearchTutorsQueryDto {
   @IsString()
   @Matches(/^\d{6}$/)
   pincode?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(6)
+  @Max(38)
+  latitude?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(68)
+  @Max(98)
+  longitude?: number;
 }

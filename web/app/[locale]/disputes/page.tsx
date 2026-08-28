@@ -1,7 +1,18 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
-import { apiWithAuth } from '@/lib/api';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import {
+  Alert,
+  Button,
+  Card,
+  EmptyState,
+  FormField,
+  Input,
+  PageHeader,
+  Select,
+  Textarea,
+} from '@/components/ui';
+import { apiWithAuth, uploadForm } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -54,16 +65,7 @@ export default function DisputesPage() {
   const uploadEvidence = async (file: File) => {
     const fd = new FormData();
     fd.append('file', file);
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1'}/disputes/evidence/upload`,
-      {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: fd,
-      },
-    );
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.message ?? 'Upload failed');
+    const json = await uploadForm<{ url: string }>('/disputes/evidence/upload', fd);
     setEvidenceUrls((prev) => [...prev, json.url]);
   };
 
@@ -103,112 +105,130 @@ export default function DisputesPage() {
   };
 
   return (
-    <>
-      <SiteHeader />
+    <AppFrame>
       <main className="mx-auto max-w-3xl px-4 py-10">
-        <h1 className="mb-4 text-2xl font-bold">{t('title')}</h1>
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
+        <PageHeader title={t('title')} />
+        {error && <Alert className="mb-4">{error}</Alert>}
 
         {role !== 'ADMIN' && (
-          <form onSubmit={create} className="mb-8 space-y-3 rounded-lg bg-white p-4 shadow">
-            <input
-              className="w-full rounded border px-3 py-2"
-              placeholder={t('agreementId')}
-              value={agreementId}
-              onChange={(e) => setAgreementId(e.target.value)}
-              required
-            />
-            <select
-              className="w-full rounded border px-3 py-2"
-              value={type}
-              onChange={(e) => setType(e.target.value)}
-            >
-              {TYPES.map((x) => (
-                <option key={x} value={x}>
-                  {x}
-                </option>
-              ))}
-            </select>
-            <textarea
-              className="w-full rounded border px-3 py-2"
-              rows={3}
-              required
-              minLength={10}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('description')}
-            />
-            <input
-              type="file"
-              accept="image/jpeg,image/png,application/pdf"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) uploadEvidence(f).catch((err) => setError(String(err)));
-              }}
-            />
-            {!!evidenceUrls.length && (
-              <p className="text-xs text-gray-500">
-                {evidenceUrls.length} {t('evidenceAttached')}
-              </p>
-            )}
-            <button type="submit" className="rounded bg-blue-600 px-4 py-2 text-white">
-              {t('create')}
-            </button>
-          </form>
-        )}
-
-        <ul className="space-y-3">
-          {rows.map((r) => (
-            <li key={r.id} className="rounded-lg bg-white p-4 shadow">
-              <p className="font-medium">
-                {r.type} · {r.status}
-              </p>
-              <p className="text-sm text-gray-600">{r.description}</p>
-              {r.resolution && (
-                <p className="mt-1 text-sm text-green-700">
-                  {t('resolution')}: {r.resolution}
+          <Card className="mb-8">
+            <form onSubmit={create} className="space-y-3">
+              <FormField label={t('agreementId')} id="dispute-agreement">
+                {(id) => (
+                  <Input
+                    id={id}
+                    value={agreementId}
+                    onChange={(e) => setAgreementId(e.target.value)}
+                    required
+                  />
+                )}
+              </FormField>
+              <FormField label={tc('status')} id="dispute-type">
+                {(id) => (
+                  <Select
+                    id={id}
+                    value={type}
+                    onChange={(e) => setType(e.target.value)}
+                  >
+                    {TYPES.map((x) => (
+                      <option key={x} value={x}>
+                        {x}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </FormField>
+              <FormField label={t('description')} id="dispute-desc">
+                {(id) => (
+                  <Textarea
+                    id={id}
+                    rows={3}
+                    required
+                    minLength={10}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                  />
+                )}
+              </FormField>
+              <Input
+                type="file"
+                accept="image/jpeg,image/png,application/pdf"
+                aria-label={t('evidenceAttached')}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) uploadEvidence(f).catch((err) => setError(String(err)));
+                }}
+              />
+              {!!evidenceUrls.length && (
+                <p className="text-xs text-ink-muted">
+                  {evidenceUrls.length} {t('evidenceAttached')}
                 </p>
               )}
-              {role === 'ADMIN' &&
-                (r.status === 'OPEN' || r.status === 'UNDER_REVIEW') && (
-                  <button
-                    type="button"
-                    className="mt-2 text-sm text-blue-600 underline"
-                    onClick={() => setResolveId(r.id)}
-                  >
-                    {t('resolve')}
-                  </button>
-                )}
-            </li>
-          ))}
-        </ul>
-
-        {resolveId && (
-          <div className="mt-6 space-y-2 rounded border bg-white p-4">
-            <textarea
-              className="w-full rounded border px-3 py-2"
-              rows={3}
-              value={resolution}
-              onChange={(e) => setResolution(e.target.value)}
-              placeholder={t('resolutionNotes')}
-            />
-            <button
-              type="button"
-              className="rounded bg-blue-600 px-4 py-2 text-white"
-              onClick={resolve}
-            >
-              {t('confirmResolve')}
-            </button>
-          </div>
+              <Button type="submit">{t('create')}</Button>
+            </form>
+          </Card>
         )}
 
-        <Link
-          href={`/${locale}/dashboard/${role.toLowerCase()}`}
-          className="mt-6 inline-block text-blue-600"
-        >
-          {tc('back')}
-        </Link>
+        {!rows.length ? (
+          <EmptyState title={t('empty')} />
+        ) : (
+          <ul className="space-y-3">
+            {rows.map((r) => (
+              <li key={r.id}>
+                <Card>
+                  <p className="font-medium text-ink">
+                    {r.type} · {r.status}
+                  </p>
+                  <p className="mt-1 text-sm text-ink-muted">{r.description}</p>
+                  {r.resolution && (
+                    <p className="mt-1 text-sm text-success">
+                      {t('resolution')}: {r.resolution}
+                    </p>
+                  )}
+                  {role === 'ADMIN' &&
+                    (r.status === 'OPEN' || r.status === 'UNDER_REVIEW') && (
+                      <Button
+                        type="button"
+                        variant="link"
+                        className="mt-2"
+                        onClick={() => setResolveId(r.id)}
+                      >
+                        {t('resolve')}
+                      </Button>
+                    )}
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {resolveId && (
+          <Card className="mt-6 space-y-3">
+            <FormField label={t('resolutionNotes')} id="dispute-resolution">
+              {(id) => (
+                <Textarea
+                  id={id}
+                  rows={3}
+                  value={resolution}
+                  onChange={(e) => setResolution(e.target.value)}
+                />
+              )}
+            </FormField>
+            <Button type="button" onClick={resolve}>
+              {t('confirmResolve')}
+            </Button>
+          </Card>
+        )}
+
+        {role && (
+          <Link
+            href={`/${locale}/dashboard/${role.toLowerCase()}`}
+            className="mt-6 inline-block text-sm font-medium text-brand hover:underline"
+          >
+            {tc('back')}
+          </Link>
+        )}
       </main>
-    </>
+    </AppFrame>
   );
 }

@@ -42,6 +42,16 @@ export class AuthService {
     return createHash('sha256').update(token).digest('hex');
   }
 
+  private hashOtp(otp: string): string {
+    return createHash('sha256').update(otp).digest('hex');
+  }
+
+  private assertNotSuspended(user: { status: UserStatus }) {
+    if (user.status === UserStatus.SUSPENDED) {
+      throw new UnauthorizedException('Account is suspended');
+    }
+  }
+
   private requireJwtSecret(key: 'JWT_ACCESS_SECRET' | 'JWT_REFRESH_SECRET'): string {
     const value = this.config.get<string>(key)?.trim();
     const isProd = this.config.get<string>('NODE_ENV') === 'production';
@@ -136,6 +146,7 @@ export class AuthService {
   }
 
   async registerStudent(dto: RegisterStudentDto) {
+    this.assertSoftLaunchAccess(dto.email, dto.inviteCode);
     await this.assertUnique(dto.mobile, dto.email);
     const user = await this.prisma.user.create({
       data: {
@@ -155,6 +166,7 @@ export class AuthService {
   }
 
   async registerTutor(dto: RegisterTutorDto) {
+    this.assertSoftLaunchAccess(dto.email, dto.inviteCode);
     await this.assertUnique(dto.mobile, dto.email);
     const user = await this.prisma.user.create({
       data: {
@@ -170,6 +182,33 @@ export class AuthService {
     });
     await this.sendOtpInternal(user.email);
     return { message: 'Tutor registered. OTP sent to email.', userId: user.id };
+  }
+
+  /**
+   * Soft launch gate (Phase 7D.3): when SOFT_LAUNCH_INVITE_ONLY=true,
+   * registration requires a matching invite code or allowlisted email.
+   */
+  private assertSoftLaunchAccess(email: string, inviteCode?: string) {
+    const enabled =
+      this.config.get<string>('SOFT_LAUNCH_INVITE_ONLY')?.trim() === 'true';
+    if (!enabled) return;
+
+    const allowlist = (this.config.get<string>('SOFT_LAUNCH_ALLOWLIST_EMAILS') ?? '')
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    if (allowlist.includes(email.toLowerCase())) return;
+
+    const codes = (this.config.get<string>('SOFT_LAUNCH_INVITE_CODES') ?? '')
+      .split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    const code = inviteCode?.trim().toLowerCase() ?? '';
+    if (code && codes.includes(code)) return;
+
+    throw new BadRequestException(
+      'Invite-only soft launch: provide a valid invite code or use an allowlisted email',
+    );
   }
 
   private async assertUnique(mobile: string, email: string) {
@@ -188,6 +227,7 @@ export class AuthService {
     if (dto.purpose === 'login') {
       const user = await this.prisma.user.findUnique({ where: { email } });
       if (!user) throw new NotFoundException('No account found with this email');
+      this.assertNotSuspended(user);
     }
     await this.sendOtpInternal(email);
     return { message: 'OTP sent to email' };
@@ -196,17 +236,23 @@ export class AuthService {
   private async sendOtpInternal(email: string) {
     const otp = this.generateOtp();
     const ttl = Number(this.config.get('OTP_TTL_SECONDS') ?? 300);
-    await this.redis.set(this.otpKey(email), otp, ttl);
+    await this.redis.set(this.otpKey(email), this.hashOtp(otp), ttl);
     await this.mail.sendOtp(email, otp);
   }
 
   async verifyOtp(dto: VerifyOtpDto) {
     const email = dto.email.toLowerCase();
     const stored = await this.redis.get(this.otpKey(email));
-    if (!stored || stored !== dto.otp) {
+    if (!stored || stored !== this.hashOtp(dto.otp)) {
       throw new UnauthorizedException('Invalid or expired OTP');
     }
     await this.redis.del(this.otpKey(email));
+
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+    if (!existing) {
+      throw new UnauthorizedException('Invalid or expired OTP');
+    }
+    this.assertNotSuspended(existing);
 
     const user = await this.prisma.user.update({
       where: { email },
@@ -226,6 +272,7 @@ export class AuthService {
     }
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
+    this.assertNotSuspended(user);
 
     const tokens = await this.issueTokens(user);
     return { ...tokens, user: this.formatUser(user) };
@@ -246,6 +293,7 @@ export class AuthService {
       if (!user?.refreshTokenHash) {
         throw new UnauthorizedException('Invalid refresh token');
       }
+      this.assertNotSuspended(user);
       const incoming = this.hashRefreshToken(refreshToken);
       if (incoming !== user.refreshTokenHash) {
         await this.prisma.user.update({
@@ -266,6 +314,30 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
     return this.formatUser(user);
+  }
+
+  /** Revoke refresh token hash (logout). Idempotent if token missing/invalid. */
+  async logout(refreshToken?: string | null) {
+    if (!refreshToken) return { ok: true };
+    try {
+      const payload = await this.jwt.verifyAsync<{ sub: string }>(refreshToken, {
+        secret: this.requireJwtSecret('JWT_REFRESH_SECRET'),
+      });
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+      });
+      if (!user?.refreshTokenHash) return { ok: true };
+      const incoming = this.hashRefreshToken(refreshToken);
+      if (incoming === user.refreshTokenHash) {
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { refreshTokenHash: null },
+        });
+      }
+    } catch {
+      /* ignore invalid token on logout */
+    }
+    return { ok: true };
   }
 
   async setPassword(userId: string, password: string) {
@@ -290,7 +362,7 @@ export class AuthService {
     }
     const key = this.otpKey(email.toLowerCase());
     const stored = await this.redis.get(key);
-    if (!stored || stored !== otp) {
+    if (!stored || stored !== this.hashOtp(otp)) {
       throw new UnauthorizedException('Invalid or expired OTP');
     }
     await this.redis.del(key);

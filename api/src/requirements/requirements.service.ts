@@ -14,7 +14,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../common/audit.service';
 import { StudentsService } from '../students/students.service';
-import { geocodePincode } from '../common/geo';
+import { GeoService } from '../common/geo.service';
 import { MatchingService } from '../matches/matching.service';
 import { UpdateRequirementDto, UpsertRequirementDto } from './dto/requirement.dto';
 
@@ -34,6 +34,7 @@ export class RequirementsService {
     private readonly audit: AuditService,
     private readonly students: StudentsService,
     private readonly matching: MatchingService,
+    private readonly geo: GeoService,
   ) {}
 
   private serialize(req: {
@@ -103,12 +104,22 @@ export class RequirementsService {
     }
   }
 
-  private locationFields(mode: RequirementMode, pincode?: string | null, address?: string | null) {
+  private async locationFields(
+    mode: RequirementMode,
+    pincode?: string | null,
+    address?: string | null,
+    latitude?: number | null,
+    longitude?: number | null,
+  ) {
     this.validateLocation(mode, pincode);
     if (!pincode) {
       return { pincode: null, address: address ?? null, latitude: null, longitude: null };
     }
-    const coords = geocodePincode(pincode);
+    const coords = await this.geo.resolveCoordinates({
+      pincode,
+      latitude,
+      longitude,
+    });
     return {
       pincode,
       address: address ?? null,
@@ -122,7 +133,13 @@ export class RequirementsService {
     if (dto.budgetMax < dto.budgetMin) {
       throw new BadRequestException('budgetMax must be >= budgetMin');
     }
-    const loc = this.locationFields(dto.mode, dto.pincode, dto.address);
+    const loc = await this.locationFields(
+      dto.mode,
+      dto.pincode,
+      dto.address,
+      dto.latitude,
+      dto.longitude,
+    );
     const req = await this.prisma.requirement.create({
       data: {
         studentId: student.id,
@@ -189,6 +206,10 @@ export class RequirementsService {
 
     return {
       ...this.serialize(req),
+      // Pre-agreement privacy: tutors never see exact address/coords (same as open list)
+      ...(role === UserRole.TUTOR
+        ? { address: null, latitude: null, longitude: null }
+        : {}),
       studentName: role === UserRole.STUDENT || role === UserRole.ADMIN ? req.student.user.name : undefined,
     };
   }
@@ -210,7 +231,9 @@ export class RequirementsService {
     const mode = dto.mode ?? existing.mode;
     const pincode = dto.pincode !== undefined ? dto.pincode : existing.pincode;
     const address = dto.address !== undefined ? dto.address : existing.address;
-    const loc = this.locationFields(mode, pincode, address);
+    const latitude = dto.latitude !== undefined ? dto.latitude : existing.latitude;
+    const longitude = dto.longitude !== undefined ? dto.longitude : existing.longitude;
+    const loc = await this.locationFields(mode, pincode, address, latitude, longitude);
 
     const req = await this.prisma.requirement.update({
       where: { id },

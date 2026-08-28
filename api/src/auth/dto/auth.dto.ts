@@ -21,6 +21,14 @@ export class RegisterStudentDto {
   @IsOptional()
   @IsString()
   locale?: string;
+
+  @ApiPropertyOptional({
+    description: 'Required when SOFT_LAUNCH_INVITE_ONLY=true (unless email is allowlisted)',
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(4)
+  inviteCode?: string;
 }
 
 export class RegisterTutorDto extends RegisterStudentDto {
@@ -64,10 +72,12 @@ export class LoginDto {
 }
 
 export class RefreshTokenDto {
-  @ApiProperty()
+  @ApiPropertyOptional({
+    description: 'Optional when refresh cookie (tc_refresh) is present',
+  })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  refreshToken!: string;
+  refreshToken?: string;
 }
 
 export class SetPasswordDto {

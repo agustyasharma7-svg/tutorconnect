@@ -1,9 +1,15 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
-import { apiWithAuth } from '@/lib/api';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import {
+  Button,
+  ButtonLink,
+  Card,
+  PageHeader,
+  Spinner,
+} from '@/components/ui';
+import { apiWithAuth, downloadBlob } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -37,7 +43,6 @@ export default function AdminDashboard() {
   const router = useRouter();
   const { locale } = useParams<{ locale: string }>();
   const [ready, setReady] = useState(false);
-  const [token, setToken] = useState('');
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [audits, setAudits] = useState<Audit[]>([]);
 
@@ -48,7 +53,6 @@ export default function AdminDashboard() {
       router.replace(`/${locale}/auth/login`);
       return;
     }
-    setToken(access);
     setReady(true);
     Promise.all([
       apiWithAuth<Metrics['users']>('/admin/metrics/users', access),
@@ -61,105 +65,118 @@ export default function AdminDashboard() {
     });
   }, [locale, router]);
 
-  if (!ready) return <p className="p-8">{tc('loading')}</p>;
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Spinner label={tc('loading')} />
+      </div>
+    );
+  }
 
-  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
   const revMax = metrics
-    ? Math.max(metrics.revenue.registrationGross, metrics.revenue.commissionGross, 1)
+    ? Math.max(
+        metrics.revenue.registrationGross,
+        metrics.revenue.commissionGross,
+        1,
+      )
     : 1;
 
   const downloadCsv = (path: string, filename: string) => {
-    fetch(`${apiBase}${path}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.blob())
-      .then((b) => {
-        const url = URL.createObjectURL(b);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-      });
+    downloadBlob(path, filename).catch(() => {
+      /* ignore */
+    });
   };
 
   return (
-    <>
-      <SiteHeader />
-      <main className="mx-auto max-w-5xl px-4 py-12">
-        <h1 className="text-2xl font-bold">{t('admin')}</h1>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Link
-            href={`/${locale}/admin/verification`}
-            className="rounded bg-blue-600 px-4 py-2 text-white"
-          >
+    <AppFrame>
+      <main className="mx-auto max-w-5xl px-4 py-10">
+        <PageHeader title={t('admin')} />
+        <div className="flex flex-wrap gap-2">
+          <ButtonLink href={`/${locale}/admin/verification`} size="sm">
             {ta('verificationQueue')}
-          </Link>
-          <Link href={`/${locale}/admin/commissions`} className="rounded border px-4 py-2">
+          </ButtonLink>
+          <ButtonLink
+            href={`/${locale}/admin/commissions`}
+            variant="secondary"
+            size="sm"
+          >
             {t('commissions')}
-          </Link>
-          <Link href={`/${locale}/disputes`} className="rounded border px-4 py-2">
+          </ButtonLink>
+          <ButtonLink
+            href={`/${locale}/disputes`}
+            variant="secondary"
+            size="sm"
+          >
             {ta('disputes')}
-          </Link>
-          <button
+          </ButtonLink>
+          <Button
             type="button"
-            className="rounded border px-4 py-2"
+            variant="secondary"
+            size="sm"
             onClick={() => downloadCsv('/admin/export/users.csv', 'users.csv')}
           >
             {ta('exportUsers')}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="rounded border px-4 py-2"
-            onClick={() => downloadCsv('/admin/export/revenue.csv', 'revenue.csv')}
+            variant="secondary"
+            size="sm"
+            onClick={() =>
+              downloadCsv('/admin/export/revenue.csv', 'revenue.csv')
+            }
           >
             {ta('exportRevenue')}
-          </button>
+          </Button>
         </div>
 
         {metrics && (
           <>
             <div className="mt-8 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-lg bg-white p-4 shadow">
-                <p className="text-sm text-gray-500">{ta('users')}</p>
-                <p className="text-2xl font-semibold">
+              <Card className="p-4">
+                <p className="text-sm text-ink-muted">{ta('users')}</p>
+                <p className="text-2xl font-semibold text-ink">
                   {metrics.users.students + metrics.users.tutors}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-ink-muted">
                   S {metrics.users.students} · T {metrics.users.tutors} · MAU{' '}
                   {metrics.users.mau30d}
                 </p>
-              </div>
-              <div className="rounded-lg bg-white p-4 shadow">
-                <p className="text-sm text-gray-500">{ta('revenue')}</p>
-                <p className="text-2xl font-semibold">₹{metrics.revenue.totalGross}</p>
-                <p className="text-xs text-gray-500">
+              </Card>
+              <Card className="p-4">
+                <p className="text-sm text-ink-muted">{ta('revenue')}</p>
+                <p className="text-2xl font-semibold text-ink">
+                  ₹{metrics.revenue.totalGross}
+                </p>
+                <p className="text-xs text-ink-muted">
                   Reg ₹{metrics.revenue.registrationGross} · Com ₹
                   {metrics.revenue.commissionGross}
                 </p>
-              </div>
-              <div className="rounded-lg bg-white p-4 shadow">
-                <p className="text-sm text-gray-500">{ta('operations')}</p>
-                <p className="text-2xl font-semibold">
+              </Card>
+              <Card className="p-4">
+                <p className="text-sm text-ink-muted">{ta('operations')}</p>
+                <p className="text-2xl font-semibold text-ink">
                   {metrics.ops.pendingVerifications}
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-ink-muted">
                   Pending verify · Disputes {metrics.ops.openDisputes} · Overdue{' '}
                   {metrics.ops.overdueCommissions}
                 </p>
-              </div>
+              </Card>
             </div>
 
-            <div className="mt-6 rounded-lg bg-white p-4 shadow">
-              <p className="mb-3 text-sm font-medium text-gray-700">{ta('revenueSplit')}</p>
+            <Card className="mt-6 p-4">
+              <p className="mb-3 text-sm font-medium text-ink">
+                {ta('revenueSplit')}
+              </p>
               <div className="space-y-3">
                 <div>
-                  <div className="mb-1 flex justify-between text-xs text-gray-600">
+                  <div className="mb-1 flex justify-between text-xs text-ink-muted">
                     <span>Registration</span>
                     <span>₹{metrics.revenue.registrationGross}</span>
                   </div>
-                  <div className="h-3 overflow-hidden rounded bg-gray-100">
+                  <div className="h-3 overflow-hidden rounded-full bg-cream-dark">
                     <div
-                      className="h-full bg-sky-600"
+                      className="h-full rounded-full bg-sky-600"
                       style={{
                         width: `${(metrics.revenue.registrationGross / revMax) * 100}%`,
                       }}
@@ -167,13 +184,13 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div>
-                  <div className="mb-1 flex justify-between text-xs text-gray-600">
+                  <div className="mb-1 flex justify-between text-xs text-ink-muted">
                     <span>Commission</span>
                     <span>₹{metrics.revenue.commissionGross}</span>
                   </div>
-                  <div className="h-3 overflow-hidden rounded bg-gray-100">
+                  <div className="h-3 overflow-hidden rounded-full bg-cream-dark">
                     <div
-                      className="h-full bg-amber-600"
+                      className="h-full rounded-full bg-amber-600"
                       style={{
                         width: `${(metrics.revenue.commissionGross / revMax) * 100}%`,
                       }}
@@ -181,20 +198,24 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               </div>
-            </div>
+            </Card>
           </>
         )}
 
-        <h2 className="mt-10 mb-3 text-lg font-semibold">{ta('auditLogs')}</h2>
+        <h2 className="mb-3 mt-10 text-lg font-semibold text-ink">
+          {ta('auditLogs')}
+        </h2>
         <ul className="space-y-2 text-sm">
           {audits.map((a) => (
-            <li key={a.id} className="rounded border bg-white px-3 py-2">
-              {a.action} · {a.entityType} {a.entityId?.slice(0, 8)} ·{' '}
-              {new Date(a.createdAt).toLocaleString()}
+            <li key={a.id}>
+              <Card className="px-3 py-2">
+                {a.action} · {a.entityType} {a.entityId?.slice(0, 8)} ·{' '}
+                {new Date(a.createdAt).toLocaleString()}
+              </Card>
             </li>
           ))}
         </ul>
       </main>
-    </>
+    </AppFrame>
   );
 }

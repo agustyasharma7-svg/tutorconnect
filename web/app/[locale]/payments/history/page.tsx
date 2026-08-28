@@ -1,9 +1,15 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import {
+  Alert,
+  ButtonLink,
+  Card,
+  EmptyState,
+  PageHeader,
+} from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -39,29 +45,40 @@ export default function PaymentHistoryPage() {
   }, [locale, router]);
 
   return (
-    <>
-      <SiteHeader />
+    <AppFrame>
       <main className="mx-auto max-w-3xl px-4 py-10">
-        <h1 className="mb-4 text-2xl font-bold">{t('history')}</h1>
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-        {!rows.length && <p className="text-gray-600">{t('historyEmpty')}</p>}
-        <ul className="space-y-3">
-          {rows.map((r) => (
-            <li key={r.id} className="rounded-lg bg-white p-4 shadow">
-              <p className="font-medium">
-                {r.type} — ₹{r.grossAmount}
-              </p>
-              <p className="text-sm text-gray-600">
-                {tc('status')}: {r.status} · {t('taxable')}: ₹{r.taxableAmount} ·{' '}
-                {t('gst')}: ₹{r.gstAmount}
-              </p>
-            </li>
-          ))}
-        </ul>
-        <Link href={`/${locale}/commissions`} className="mt-6 inline-block text-blue-600 underline">
+        <PageHeader title={t('history')} />
+        {error && <Alert className="mb-3">{error}</Alert>}
+        {!rows.length && !error ? (
+          <EmptyState title={t('historyEmpty')} />
+        ) : (
+          <ul className="space-y-3">
+            {rows.map((r) => (
+              <li key={r.id}>
+                <Card className="p-4">
+                  <p className="font-medium text-ink">
+                    {r.type} — ₹{r.grossAmount}
+                  </p>
+                  <p className="text-sm text-ink-muted">
+                    {tc('status')}: {r.status} · {t('taxable')}: ₹
+                    {r.taxableAmount} · {t('gst')}: ₹{r.gstAmount}
+                  </p>
+                  <p className="mt-1 text-xs text-ink-muted">
+                    {new Date(r.createdAt).toLocaleString()}
+                  </p>
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
+        <ButtonLink
+          href={`/${locale}/commissions`}
+          variant="link"
+          className="mt-6"
+        >
           {t('commissionsTitle')}
-        </Link>
+        </ButtonLink>
       </main>
-    </>
+    </AppFrame>
   );
 }

@@ -1,9 +1,19 @@
 'use client';
 
-import { SiteHeader } from '@/components/SiteHeader';
+import { AppFrame } from '@/components/app-shell/AppFrame';
+import {
+  Alert,
+  Button,
+  ButtonLink,
+  Card,
+  FormField,
+  Input,
+  PageHeader,
+  Spinner,
+  Textarea,
+} from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -27,6 +37,8 @@ type Req = {
 export default function RequirementDetailPage() {
   const t = useTranslations('requirements');
   const tc = useTranslations('common');
+  const td = useTranslations('dashboard');
+  const tp = useTranslations('profile');
   const { locale, id } = useParams<{ locale: string; id: string }>();
   const router = useRouter();
   const [req, setReq] = useState<Req | null>(null);
@@ -95,142 +107,156 @@ export default function RequirementDetailPage() {
           proposedFee: fee,
         }),
       });
-      setMessage('Applied');
+      setMessage(tc('apply'));
       router.push(`/${locale}/matches/mine`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed');
     }
   };
 
-  if (!req) return <p className="p-8">{tc('loading')}</p>;
+  if (!req) {
+    return (
+      <div className="min-h-screen bg-cream">
+        <Spinner label={tc('loading')} />
+      </div>
+    );
+  }
 
   return (
-    <>
-      <SiteHeader />
+    <AppFrame>
       <main className="mx-auto max-w-2xl px-4 py-10">
-        <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">{t('detail')}</h1>
-          <Link
-            href={
-              role === 'TUTOR'
-                ? `/${locale}/requirements/open`
-                : `/${locale}/requirements`
-            }
-            className="text-sm text-blue-600"
-          >
-            {tc('back')}
-          </Link>
-        </div>
-        {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-        {message && <p className="mb-3 text-sm text-green-700">{message}</p>}
-        <div className="space-y-2 rounded-lg bg-white p-6 shadow">
-          <p className="text-lg font-medium">
+        <PageHeader
+          title={t('detail')}
+          actions={
+            <ButtonLink
+              href={
+                role === 'TUTOR'
+                  ? `/${locale}/requirements/open`
+                  : `/${locale}/requirements`
+              }
+              variant="link"
+              size="sm"
+            >
+              {tc('back')}
+            </ButtonLink>
+          }
+        />
+        {error && <Alert className="mb-3">{error}</Alert>}
+        {message && (
+          <Alert tone="success" className="mb-3">
+            {message}
+          </Alert>
+        )}
+        <Card className="space-y-2">
+          <p className="text-lg font-medium text-ink">
             {label(req.subject)} · {label(req.class)} · {label(req.board)}
           </p>
-          <p>
+          <p className="text-ink">
             {tc('budget')}: ₹{req.budgetMin}–₹{req.budgetMax}/mo
           </p>
-          <p>
+          <p className="text-ink">
             {tc('status')}: {req.status}
           </p>
-          <p>
-            Mode: {req.mode} · {req.scheduleDays.join(', ')}{' '}
-            {req.scheduleTime ? `@ ${req.scheduleTime}` : ''} · {req.durationMins} min
+          <p className="text-ink-muted">
+            {req.mode} · {req.scheduleDays.join(', ')}{' '}
+            {req.scheduleTime ? `@ ${req.scheduleTime}` : ''} ·{' '}
+            {req.durationMins} min
           </p>
-          {req.pincode && <p>Pincode: {req.pincode}</p>}
-          {req.notes && <p className="text-gray-600">{req.notes}</p>}
-        </div>
+          {req.pincode && (
+            <p className="text-ink-muted">
+              {tp('pincode')}: {req.pincode}
+            </p>
+          )}
+          {req.notes && <p className="text-ink-muted">{req.notes}</p>}
+        </Card>
 
         {role === 'STUDENT' && (
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-6 flex flex-wrap gap-2">
             {req.status === 'DRAFT' && (
               <>
-                <Link
+                <ButtonLink
                   href={`/${locale}/requirements/new?id=${req.id}`}
-                  className="rounded border px-4 py-2"
+                  variant="secondary"
                 >
                   {t('edit')}
-                </Link>
-                <button
-                  type="button"
-                  onClick={publish}
-                  className="rounded bg-blue-600 px-4 py-2 text-white"
-                >
+                </ButtonLink>
+                <Button type="button" onClick={publish}>
                   {tc('publish')}
-                </button>
+                </Button>
               </>
             )}
             {['DRAFT', 'OPEN', 'APPLIED', 'SHORTLISTED', 'MATCHED'].includes(
               req.status,
             ) && (
-              <button type="button" onClick={cancel} className="rounded border px-4 py-2">
+              <Button type="button" variant="secondary" onClick={cancel}>
                 {tc('cancel')}
-              </button>
+              </Button>
             )}
             {['OPEN', 'APPLIED', 'SHORTLISTED'].includes(req.status) && (
               <>
-                <Link
-                  href={`/${locale}/search?requirementId=${req.id}`}
-                  className="rounded bg-blue-600 px-4 py-2 text-white"
-                >
+                <ButtonLink href={`/${locale}/search?requirementId=${req.id}`}>
                   {tc('invite')} / {tc('search')}
-                </Link>
-                <Link
+                </ButtonLink>
+                <ButtonLink
                   href={`/${locale}/matches/inbox?requirementId=${req.id}`}
-                  className="rounded border px-4 py-2"
+                  variant="secondary"
                 >
-                  Inbox
-                </Link>
+                  {td('applicationsInbox')}
+                </ButtonLink>
               </>
             )}
             {req.status === 'ACTIVE' && (
-              <button
+              <Button
                 type="button"
+                className="bg-emerald-700 hover:bg-emerald-800"
                 onClick={markComplete}
-                className="rounded bg-emerald-700 px-4 py-2 text-white"
               >
                 {t('markComplete')}
-              </button>
+              </Button>
             )}
           </div>
         )}
 
         {role === 'ADMIN' && req.status === 'ACTIVE' && (
-          <button
+          <Button
             type="button"
+            className="mt-4 bg-emerald-700 hover:bg-emerald-800"
             onClick={markComplete}
-            className="mt-4 rounded bg-emerald-700 px-4 py-2 text-white"
           >
             {t('markComplete')}
-          </button>
+          </Button>
         )}
 
         {role === 'TUTOR' &&
           ['OPEN', 'APPLIED', 'SHORTLISTED'].includes(req.status) && (
-            <div className="mt-6 space-y-3 rounded-lg bg-white p-6 shadow">
-              <h2 className="font-medium">{tc('apply')}</h2>
-              <textarea
-                className="w-full rounded border px-3 py-2"
-                rows={3}
-                value={applyMsg}
-                onChange={(e) => setApplyMsg(e.target.value)}
-              />
-              <input
-                type="number"
-                className="w-full rounded border px-3 py-2"
-                value={fee}
-                onChange={(e) => setFee(Number(e.target.value))}
-              />
-              <button
-                type="button"
-                onClick={apply}
-                className="rounded bg-blue-600 px-4 py-2 text-white"
-              >
+            <Card className="mt-6 space-y-3">
+              <h2 className="font-medium text-ink">{tc('apply')}</h2>
+              <FormField label={t('notes')} id="apply-msg">
+                {(fid) => (
+                  <Textarea
+                    id={fid}
+                    rows={3}
+                    value={applyMsg}
+                    onChange={(e) => setApplyMsg(e.target.value)}
+                  />
+                )}
+              </FormField>
+              <FormField label={tc('budget')} id="apply-fee">
+                {(fid) => (
+                  <Input
+                    id={fid}
+                    type="number"
+                    value={fee}
+                    onChange={(e) => setFee(Number(e.target.value))}
+                  />
+                )}
+              </FormField>
+              <Button type="button" onClick={apply}>
                 {tc('apply')}
-              </button>
-            </div>
+              </Button>
+            </Card>
           )}
       </main>
-    </>
+    </AppFrame>
   );
 }
