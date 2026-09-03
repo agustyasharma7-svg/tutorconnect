@@ -1,14 +1,7 @@
 'use client';
 
 import { SiteHeader } from '@/components/SiteHeader';
-import {
-  Alert,
-  Button,
-  Card,
-  FormField,
-  Input,
-  PageHeader,
-} from '@/components/ui';
+import { Alert, Button, Card, FormField, Input, PageHeader } from '@/components/ui';
 import { api } from '@/lib/api';
 import { dashboardPath, saveAuth } from '@/lib/auth';
 import { AuthUser } from '@/lib/types';

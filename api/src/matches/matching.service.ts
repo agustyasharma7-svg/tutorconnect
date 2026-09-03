@@ -44,6 +44,9 @@ export class MatchingService {
     photoUrl: string | null;
     teachingRadiusKm: number | null;
     pincode: string | null;
+    otherSubjects?: string | null;
+    otherClasses?: string | null;
+    otherBoards?: string | null;
     isVerified?: boolean;
     ratingAvg?: number | null;
     ratingCount?: number;
@@ -67,6 +70,9 @@ export class MatchingService {
       subjects: tutor.subjects.map((s) => s.subject),
       classes: tutor.classes.map((c) => c.class),
       boards: tutor.boards.map((b) => b.board),
+      otherSubjects: tutor.otherSubjects ?? null,
+      otherClasses: tutor.otherClasses ?? null,
+      otherBoards: tutor.otherBoards ?? null,
       // Contact hidden pre-agreement (FR-DEMO-003)
       score,
       distanceKm: distanceKm ?? null,

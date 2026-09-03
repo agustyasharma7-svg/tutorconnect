@@ -117,6 +117,9 @@ export class TutorsService {
       subjects: tutor.subjects.map((s) => s.subject),
       classes: tutor.classes.map((c) => c.class),
       boards: tutor.boards.map((b) => b.board),
+      otherSubjects: tutor.otherSubjects,
+      otherClasses: tutor.otherClasses,
+      otherBoards: tutor.otherBoards,
       availability: tutor.availability,
       documents: tutor.documents,
       completeness,
@@ -170,6 +173,47 @@ export class TutorsService {
 
   async updateSubjects(userId: string, dto: UpdateTutorSubjectsDto) {
     const { tutor } = await this.ensureProfile(userId);
+
+    const [pickedSubjects, pickedClasses, pickedBoards] = await Promise.all([
+      this.prisma.subject.findMany({ where: { id: { in: dto.subjectIds } } }),
+      this.prisma.classLevel.findMany({ where: { id: { in: dto.classIds } } }),
+      this.prisma.board.findMany({ where: { id: { in: dto.boardIds } } }),
+    ]);
+
+    if (pickedSubjects.length !== dto.subjectIds.length) {
+      throw new BadRequestException('Invalid subject selection');
+    }
+    if (pickedClasses.length !== dto.classIds.length) {
+      throw new BadRequestException('Invalid class selection');
+    }
+    if (pickedBoards.length !== dto.boardIds.length) {
+      throw new BadRequestException('Invalid board selection');
+    }
+
+    const needsOtherSubject = pickedSubjects.some((s) => s.nameEn === 'Other');
+    const needsOtherClass = pickedClasses.some((c) => c.nameEn === 'Other');
+    const needsOtherBoard = pickedBoards.some((b) => b.nameEn === 'Other');
+
+    const otherSubjects = needsOtherSubject
+      ? dto.otherSubjects?.trim() || null
+      : null;
+    const otherClasses = needsOtherClass
+      ? dto.otherClasses?.trim() || null
+      : null;
+    const otherBoards = needsOtherBoard
+      ? dto.otherBoards?.trim() || null
+      : null;
+
+    if (needsOtherSubject && (!otherSubjects || otherSubjects.length < 2)) {
+      throw new BadRequestException('Please specify the other subject');
+    }
+    if (needsOtherClass && (!otherClasses || otherClasses.length < 2)) {
+      throw new BadRequestException('Please specify the other class');
+    }
+    if (needsOtherBoard && (!otherBoards || otherBoards.length < 2)) {
+      throw new BadRequestException('Please specify the other board');
+    }
+
     await this.prisma.$transaction([
       this.prisma.tutorSubject.deleteMany({ where: { tutorId: tutor.id } }),
       this.prisma.tutorClass.deleteMany({ where: { tutorId: tutor.id } }),
@@ -185,6 +229,10 @@ export class TutorsService {
       }),
       this.prisma.tutorBoard.createMany({
         data: dto.boardIds.map((boardId) => ({ tutorId: tutor.id, boardId })),
+      }),
+      this.prisma.tutor.update({
+        where: { id: tutor.id },
+        data: { otherSubjects, otherClasses, otherBoards },
       }),
     ]);
     await this.refreshDiscoverable(tutor.id);

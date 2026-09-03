@@ -1,14 +1,7 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
 import { SiteFooter } from '@/components/SiteFooter';
-import {
-  Button,
-  FormField,
-  Input,
-  Select,
-  Textarea,
-} from '@/components/ui';
+import { Button, FormField, Input, Select, Textarea } from '@/components/ui';
 import { getSupportEmail } from '@/lib/support';
 import { getStoredUser } from '@/lib/auth';
 import { motion, useReducedMotion } from 'framer-motion';
@@ -59,8 +52,7 @@ export function HelpDesk() {
 
   return (
     <>
-      <AppFrame>
-        <main className="bg-cream text-ink">
+      <main className="bg-cream text-ink">
           <section className="mx-auto max-w-6xl px-4 pb-8 pt-12 lg:pt-16">
             <motion.div
               initial={reduce ? false : { y: 10 }}
@@ -200,7 +192,6 @@ export function HelpDesk() {
             </aside>
           </section>
         </main>
-      </AppFrame>
       {!isTutor && <SiteFooter />}
     </>
   );

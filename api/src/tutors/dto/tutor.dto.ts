@@ -10,6 +10,7 @@ import {
   IsUUID,
   Matches,
   Max,
+  MaxLength,
   Min,
   MinLength,
   ValidateNested,
@@ -67,6 +68,27 @@ export class UpdateTutorSubjectsDto {
   @ArrayMinSize(1)
   @IsUUID('4', { each: true })
   boardIds!: string[];
+
+  @ApiPropertyOptional({ description: 'Required when Subject "Other" is selected' })
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(120)
+  otherSubjects?: string;
+
+  @ApiPropertyOptional({ description: 'Required when Class "Other" is selected' })
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(120)
+  otherClasses?: string;
+
+  @ApiPropertyOptional({ description: 'Required when Board "Other" is selected' })
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(120)
+  otherBoards?: string;
 }
 
 export class AvailabilitySlotDto {

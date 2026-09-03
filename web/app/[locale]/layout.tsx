@@ -3,6 +3,7 @@ import { Noto_Sans } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { notFound } from 'next/navigation';
+import { AppShellGate } from '@/components/app-shell/AppShellGate';
 import { locales } from '@/i18n';
 import '../globals.css';
 
@@ -45,7 +46,9 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} className={sans.className}>
       <body className="min-h-screen bg-cream text-ink antialiased">
-        <NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider messages={messages}>
+          <AppShellGate>{children}</AppShellGate>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

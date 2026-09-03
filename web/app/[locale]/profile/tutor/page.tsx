@@ -1,17 +1,6 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
-import {
-  Alert,
-  Button,
-  Card,
-  FormField,
-  Input,
-  PageHeader,
-  Select,
-  Spinner,
-  Textarea,
-} from '@/components/ui';
+import { Alert, Button, Card, FormField, Input, PageHeader, Select, Textarea, PageSkeleton } from '@/components/ui';
 import { api, apiWithAuth, assetUrl } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import { readBrowserPosition, resolveGeo } from '@/lib/geo';
@@ -39,6 +28,9 @@ type TutorProfile = {
   subjects?: CatalogItem[];
   classes?: CatalogItem[];
   boards?: CatalogItem[];
+  otherSubjects?: string | null;
+  otherClasses?: string | null;
+  otherBoards?: string | null;
   availability?: Slot[];
 };
 
@@ -91,6 +83,9 @@ export default function TutorOnboardingPage() {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedClasses, setSelectedClasses] = useState<string[]>([]);
   const [selectedBoards, setSelectedBoards] = useState<string[]>([]);
+  const [otherSubjects, setOtherSubjects] = useState('');
+  const [otherClasses, setOtherClasses] = useState('');
+  const [otherBoards, setOtherBoards] = useState('');
   const [slots, setSlots] = useState<Slot[]>([
     { day: 'MON', startTime: '16:00', endTime: '17:00', mode: 'ONLINE' },
   ]);
@@ -132,6 +127,9 @@ export default function TutorOnboardingPage() {
         setSelectedSubjects(me.subjects?.map((x) => x.id) ?? []);
         setSelectedClasses(me.classes?.map((x) => x.id) ?? []);
         setSelectedBoards(me.boards?.map((x) => x.id) ?? []);
+        setOtherSubjects(me.otherSubjects ?? '');
+        setOtherClasses(me.otherClasses ?? '');
+        setOtherBoards(me.otherBoards ?? '');
         if (me.availability?.length) {
           setSlots(
             me.availability.map(({ day, startTime, endTime, mode }) => ({
@@ -177,16 +175,43 @@ export default function TutorOnboardingPage() {
     }
   };
 
+  const isOtherSelected = (list: CatalogItem[], selectedIds: string[]) =>
+    list.some((item) => item.nameEn === 'Other' && selectedIds.includes(item.id));
+
   const saveSubjects = async () => {
     setLoading(true);
     setError('');
     try {
+      if (isOtherSelected(subjects, selectedSubjects) && otherSubjects.trim().length < 2) {
+        setError(t('otherSubjectsRequired'));
+        setLoading(false);
+        return;
+      }
+      if (isOtherSelected(classes, selectedClasses) && otherClasses.trim().length < 2) {
+        setError(t('otherClassesRequired'));
+        setLoading(false);
+        return;
+      }
+      if (isOtherSelected(boards, selectedBoards) && otherBoards.trim().length < 2) {
+        setError(t('otherBoardsRequired'));
+        setLoading(false);
+        return;
+      }
       const me = await apiWithAuth<TutorProfile>('/tutors/me/subjects', token, {
         method: 'PATCH',
         body: JSON.stringify({
           subjectIds: selectedSubjects,
           classIds: selectedClasses,
           boardIds: selectedBoards,
+          otherSubjects: isOtherSelected(subjects, selectedSubjects)
+            ? otherSubjects.trim()
+            : undefined,
+          otherClasses: isOtherSelected(classes, selectedClasses)
+            ? otherClasses.trim()
+            : undefined,
+          otherBoards: isOtherSelected(boards, selectedBoards)
+            ? otherBoards.trim()
+            : undefined,
         }),
       });
       setProfile(me);
@@ -289,8 +314,8 @@ export default function TutorOnboardingPage() {
     setError('');
     try {
       const feeFinalized =
-        profile.registrationFeeStatus === 'PAID' ||
-        profile.registrationFeeStatus === 'WAIVED';
+        profile?.registrationFeeStatus === 'PAID' ||
+        profile?.registrationFeeStatus === 'WAIVED';
 
       if (feeFinalized) {
         setMessage(tc('save'));
@@ -322,20 +347,15 @@ export default function TutorOnboardingPage() {
   };
 
   if (!profile) {
-    return (
-      <AppFrame>
-        {error ? (
-          <Alert className="m-8">{error}</Alert>
-        ) : (
-          <Spinner label={tc('loading')} />
-        )}
-      </AppFrame>
+    return error ? (
+      <Alert className="m-8">{error}</Alert>
+    ) : (
+      <PageSkeleton />
     );
   }
 
   return (
-    <AppFrame>
-      <main className="mx-auto max-w-2xl px-4 py-10">
+    <main className="mx-auto max-w-2xl px-4 py-10">
         <PageHeader
           title={t('title')}
           actions={
@@ -476,6 +496,19 @@ export default function TutorOnboardingPage() {
                   </Chip>
                 ))}
               </div>
+              {isOtherSelected(subjects, selectedSubjects) && (
+                <FormField label={t('otherSubjects')} id="tutor-other-subjects" className="mt-3">
+                  {(id) => (
+                    <Input
+                      id={id}
+                      value={otherSubjects}
+                      onChange={(e) => setOtherSubjects(e.target.value)}
+                      placeholder={t('otherSubjectsPlaceholder')}
+                      maxLength={120}
+                    />
+                  )}
+                </FormField>
+              )}
             </div>
             <div>
               <p className="mb-2 font-medium text-ink">{t('classes')}</p>
@@ -492,6 +525,19 @@ export default function TutorOnboardingPage() {
                   </Chip>
                 ))}
               </div>
+              {isOtherSelected(classes, selectedClasses) && (
+                <FormField label={t('otherClasses')} id="tutor-other-classes" className="mt-3">
+                  {(id) => (
+                    <Input
+                      id={id}
+                      value={otherClasses}
+                      onChange={(e) => setOtherClasses(e.target.value)}
+                      placeholder={t('otherClassesPlaceholder')}
+                      maxLength={120}
+                    />
+                  )}
+                </FormField>
+              )}
             </div>
             <div>
               <p className="mb-2 font-medium text-ink">{t('boards')}</p>
@@ -508,6 +554,19 @@ export default function TutorOnboardingPage() {
                   </Chip>
                 ))}
               </div>
+              {isOtherSelected(boards, selectedBoards) && (
+                <FormField label={t('otherBoards')} id="tutor-other-boards" className="mt-3">
+                  {(id) => (
+                    <Input
+                      id={id}
+                      value={otherBoards}
+                      onChange={(e) => setOtherBoards(e.target.value)}
+                      placeholder={t('otherBoardsPlaceholder')}
+                      maxLength={120}
+                    />
+                  )}
+                </FormField>
+              )}
             </div>
             <div className="flex gap-2">
               <Button type="button" variant="secondary" onClick={() => setStep(0)}>
@@ -709,6 +768,5 @@ export default function TutorOnboardingPage() {
           </Card>
         )}
       </main>
-    </AppFrame>
   );
 }

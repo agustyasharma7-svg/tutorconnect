@@ -1,13 +1,6 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
-import {
-  Button,
-  ButtonLink,
-  Card,
-  PageHeader,
-  Spinner,
-} from '@/components/ui';
+import { Button, ButtonLink, Card, PageHeader, PageSkeleton } from '@/components/ui';
 import { apiWithAuth, downloadBlob } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import { useParams, useRouter } from 'next/navigation';
@@ -67,9 +60,7 @@ export default function AdminDashboard() {
 
   if (!ready) {
     return (
-      <div className="min-h-screen bg-cream">
-        <Spinner label={tc('loading')} />
-      </div>
+      <PageSkeleton />
     );
   }
 
@@ -88,8 +79,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <AppFrame>
-      <main className="mx-auto max-w-5xl px-4 py-10">
+    <main className="mx-auto max-w-5xl px-4 py-10">
         <PageHeader title={t('admin')} />
         <div className="flex flex-wrap gap-2">
           <ButtonLink href={`/${locale}/admin/verification`} size="sm">
@@ -216,6 +206,5 @@ export default function AdminDashboard() {
           ))}
         </ul>
       </main>
-    </AppFrame>
   );
 }

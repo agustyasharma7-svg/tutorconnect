@@ -1,16 +1,6 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
-import {
-  Alert,
-  Button,
-  ButtonLink,
-  Card,
-  EmptyState,
-  FormField,
-  PageHeader,
-  Textarea,
-} from '@/components/ui';
+import { Alert, Button, ButtonLink, Card, EmptyState, FormField, PageHeader, Textarea } from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import { useParams, useRouter } from 'next/navigation';
@@ -101,8 +91,7 @@ export default function AdminVerificationPage() {
   };
 
   return (
-    <AppFrame>
-      <main className="mx-auto max-w-4xl px-4 py-10">
+    <main className="mx-auto max-w-4xl px-4 py-10">
         <PageHeader
           title={t('verificationQueue')}
           actions={
@@ -213,6 +202,5 @@ export default function AdminVerificationPage() {
           </Card>
         )}
       </main>
-    </AppFrame>
   );
 }

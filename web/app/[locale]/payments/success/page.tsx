@@ -1,6 +1,5 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
 import { Alert, ButtonLink, Card, PageHeader } from '@/components/ui';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -13,8 +12,7 @@ export default function PaymentSuccessPage() {
   const paymentId = params.get('paymentId');
 
   return (
-    <AppFrame>
-      <main className="mx-auto max-w-lg px-4 py-10">
+    <main className="mx-auto max-w-lg px-4 py-10">
         <PageHeader title={t('successTitle')} />
         <Card>
           <Alert tone="success">{t('successBlurb')}</Alert>
@@ -36,6 +34,5 @@ export default function PaymentSuccessPage() {
           </div>
         </Card>
       </main>
-    </AppFrame>
   );
 }

@@ -1,13 +1,6 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
-import {
-  Alert,
-  Button,
-  ButtonLink,
-  Card,
-  PageHeader,
-} from '@/components/ui';
+import { Alert, Button, ButtonLink, Card, PageHeader } from '@/components/ui';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import { startCheckout } from '@/lib/payments';
 import { useParams, useRouter } from 'next/navigation';
@@ -45,8 +38,7 @@ export default function RegistrationCheckoutPage() {
   };
 
   return (
-    <AppFrame>
-      <main className="mx-auto max-w-lg px-4 py-10">
+    <main className="mx-auto max-w-lg px-4 py-10">
         <PageHeader
           title={t('registrationTitle')}
           description={t('registrationBlurb')}
@@ -74,6 +66,5 @@ export default function RegistrationCheckoutPage() {
           {tc('back')}
         </ButtonLink>
       </main>
-    </AppFrame>
   );
 }

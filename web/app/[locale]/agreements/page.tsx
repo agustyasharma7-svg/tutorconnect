@@ -1,18 +1,6 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
-import {
-  Alert,
-  Button,
-  ButtonLink,
-  Card,
-  EmptyState,
-  FormField,
-  Input,
-  PageHeader,
-  Select,
-  Textarea,
-} from '@/components/ui';
+import { Alert, Button, ButtonLink, Card, EmptyState, FormField, Input, PageHeader, Select, Textarea } from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import Link from 'next/link';
@@ -138,8 +126,7 @@ export default function AgreementsPage() {
   };
 
   return (
-    <AppFrame>
-      <main className="mx-auto max-w-3xl px-4 py-10">
+    <main className="mx-auto max-w-3xl px-4 py-10">
         <PageHeader title={t('title')} />
         {error && <Alert className="mb-3">{error}</Alert>}
 
@@ -344,6 +331,5 @@ export default function AgreementsPage() {
           </Link>
         )}
       </main>
-    </AppFrame>
   );
 }

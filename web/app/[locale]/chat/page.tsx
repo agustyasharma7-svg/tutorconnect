@@ -1,12 +1,6 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
-import {
-  Alert,
-  Card,
-  EmptyState,
-  PageHeader,
-} from '@/components/ui';
+import { Alert, Card, EmptyState, PageHeader } from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import Link from 'next/link';
@@ -48,8 +42,7 @@ export default function ChatListPage() {
   }, [locale, router]);
 
   return (
-    <AppFrame>
-      <main className="mx-auto max-w-2xl px-4 py-10">
+    <main className="mx-auto max-w-2xl px-4 py-10">
         <PageHeader title={t('title')} description={t('unlockHint')} />
         {error && <Alert className="mb-3">{error}</Alert>}
         {!rows.length ? (
@@ -87,6 +80,5 @@ export default function ChatListPage() {
           </Link>
         )}
       </main>
-    </AppFrame>
   );
 }

@@ -1,14 +1,6 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
-import {
-  Alert,
-  Button,
-  ButtonLink,
-  Card,
-  PageHeader,
-  Spinner,
-} from '@/components/ui';
+import { Alert, Button, ButtonLink, Card, PageHeader, PageSkeleton } from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import { startCheckout } from '@/lib/payments';
@@ -59,15 +51,12 @@ export default function CommissionCheckoutPage() {
 
   if (!commission && !error) {
     return (
-      <div className="min-h-screen bg-cream">
-        <Spinner label={tc('loading')} />
-      </div>
+      <PageSkeleton />
     );
   }
 
   return (
-    <AppFrame>
-      <main className="mx-auto max-w-lg px-4 py-10">
+    <main className="mx-auto max-w-lg px-4 py-10">
         <PageHeader title={t('commissionCheckout')} />
         {commission && (
           <Card className="mb-4">
@@ -99,6 +88,5 @@ export default function CommissionCheckoutPage() {
           {tc('back')}
         </ButtonLink>
       </main>
-    </AppFrame>
   );
 }

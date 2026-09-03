@@ -2,12 +2,7 @@
 
 import { SiteHeader } from '@/components/SiteHeader';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
-import {
-  Alert,
-  Card,
-  PageHeader,
-  Spinner,
-} from '@/components/ui';
+import { Alert, Card, PageHeader, PageSkeleton } from '@/components/ui';
 import { api, assetUrl } from '@/lib/api';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -29,6 +24,9 @@ type TutorPublic = {
   subjects?: { nameEn: string; nameHi: string }[];
   classes?: { nameEn: string; nameHi: string }[];
   boards?: { nameEn: string; nameHi: string }[];
+  otherSubjects?: string | null;
+  otherClasses?: string | null;
+  otherBoards?: string | null;
   availability?: { day: string; startTime: string; endTime: string; mode: string }[];
 };
 
@@ -42,6 +40,18 @@ export default function TutorPublicClient() {
 
   const label = (item: { nameEn: string; nameHi: string }) =>
     locale === 'hi' ? item.nameHi : item.nameEn;
+
+  const withOther = (
+    items: { nameEn: string; nameHi: string }[] | undefined,
+    other: string | null | undefined,
+  ) => {
+    const names = (items ?? []).map((item) =>
+      item.nameEn === 'Other' && other?.trim()
+        ? `${label(item)} (${other.trim()})`
+        : label(item),
+    );
+    return names.join(', ') || '—';
+  };
 
   useEffect(() => {
     api<TutorPublic>(`/tutors/${id}/public`)
@@ -62,7 +72,7 @@ export default function TutorPublicClient() {
     return (
       <div className="min-h-screen bg-cream">
         <SiteHeader />
-        <Spinner label={tc('loading')} />
+        <PageSkeleton />
       </div>
     );
   }
@@ -111,13 +121,13 @@ export default function TutorPublicClient() {
             {tutor.pincode ?? ''}
           </p>
           <p className="mt-2 text-sm text-ink">
-            {tp('subjects')}: {(tutor.subjects ?? []).map(label).join(', ') || '—'}
+            {tp('subjects')}: {withOther(tutor.subjects, tutor.otherSubjects)}
           </p>
           <p className="text-sm text-ink">
-            {tp('classes')}: {(tutor.classes ?? []).map(label).join(', ') || '—'}
+            {tp('classes')}: {withOther(tutor.classes, tutor.otherClasses)}
           </p>
           <p className="text-sm text-ink">
-            {tp('boards')}: {(tutor.boards ?? []).map(label).join(', ') || '—'}
+            {tp('boards')}: {withOther(tutor.boards, tutor.otherBoards)}
           </p>
           {(tutor.availability?.length ?? 0) > 0 && (
             <div className="mt-4">

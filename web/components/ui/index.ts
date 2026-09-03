@@ -9,5 +9,6 @@ export { FormField } from './field';
 export { Card, CardTitle, CardDescription } from './card';
 export { Alert } from './alert';
 export { Spinner } from './spinner';
+export { Skeleton, PageSkeleton, ShellSkeleton } from './skeleton';
 export { PageHeader } from './page-header';
 export { EmptyState } from './empty-state';

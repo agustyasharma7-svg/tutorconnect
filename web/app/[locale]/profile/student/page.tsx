@@ -1,16 +1,6 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
-import {
-  Alert,
-  Button,
-  Card,
-  FormField,
-  Input,
-  PageHeader,
-  Select,
-  Spinner,
-} from '@/components/ui';
+import { Alert, Button, Card, FormField, Input, PageHeader, Select, PageSkeleton } from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import Link from 'next/link';
@@ -96,15 +86,12 @@ export default function StudentProfilePage() {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-cream">
-        <Spinner label={tc('loading')} />
-      </div>
+      <PageSkeleton />
     );
   }
 
   return (
-    <AppFrame>
-      <main className="mx-auto max-w-xl px-4 py-10">
+    <main className="mx-auto max-w-xl px-4 py-10">
         <PageHeader
           title={t('title')}
           actions={
@@ -192,6 +179,5 @@ export default function StudentProfilePage() {
           </div>
         </Card>
       </main>
-    </AppFrame>
   );
 }

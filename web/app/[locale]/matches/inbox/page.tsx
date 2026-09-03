@@ -1,6 +1,5 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
 import { Alert, Button, ButtonLink, Card, PageHeader } from '@/components/ui';
 import { apiWithAuth, assetUrl } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
@@ -56,8 +55,7 @@ export default function InboxPage() {
   };
 
   return (
-    <AppFrame>
-      <main className="mx-auto max-w-3xl px-4 py-10">
+    <main className="mx-auto max-w-3xl px-4 py-10">
         <PageHeader title={t('inboxTitle')} />
         {error && <Alert className="mb-3">{error}</Alert>}
         {message && <Alert tone="success" className="mb-3">{message}</Alert>}
@@ -144,6 +142,5 @@ export default function InboxPage() {
           ))}
         </ul>
       </main>
-    </AppFrame>
   );
 }

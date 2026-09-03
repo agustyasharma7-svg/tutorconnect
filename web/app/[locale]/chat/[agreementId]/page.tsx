@@ -1,13 +1,6 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
-import {
-  Alert,
-  Button,
-  ButtonLink,
-  Input,
-  PageHeader,
-} from '@/components/ui';
+import { Alert, Button, ButtonLink, Input, PageHeader } from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import { useParams, useRouter } from 'next/navigation';
@@ -126,8 +119,7 @@ export default function AgreementChatPage() {
   };
 
   return (
-    <AppFrame>
-      <main className="mx-auto flex min-h-[70vh] max-w-2xl flex-col px-4 py-6">
+    <main className="mx-auto flex min-h-[70vh] max-w-2xl flex-col px-4 py-6">
         <PageHeader
           title={t('conversation')}
           description={
@@ -196,6 +188,5 @@ export default function AgreementChatPage() {
           <p className="mt-3 text-sm text-ink-muted">{t('readOnly')}</p>
         )}
       </main>
-    </AppFrame>
   );
 }

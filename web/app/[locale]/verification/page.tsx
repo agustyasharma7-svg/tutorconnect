@@ -1,16 +1,6 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
-import {
-  Alert,
-  Button,
-  Card,
-  FormField,
-  Input,
-  PageHeader,
-  Select,
-  Spinner,
-} from '@/components/ui';
+import { Alert, Button, Card, FormField, Input, PageHeader, Select, PageSkeleton } from '@/components/ui';
 import { apiWithAuth, uploadForm } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import Link from 'next/link';
@@ -84,16 +74,11 @@ export default function VerificationPage() {
   };
 
   if (!data) {
-    return (
-      <div className="min-h-screen bg-cream">
-        {error ? <Alert className="m-8">{error}</Alert> : <Spinner label={tc('loading')} />}
-      </div>
-    );
+    return error ? <Alert className="m-8">{error}</Alert> : <PageSkeleton />;
   }
 
   return (
-    <AppFrame>
-      <main className="mx-auto max-w-2xl px-4 py-10">
+    <main className="mx-auto max-w-2xl px-4 py-10">
         <PageHeader
           title={t('title')}
           description={`${t('status')}: ${data.verificationStatus}${
@@ -169,6 +154,5 @@ export default function VerificationPage() {
           {tc('back')}
         </Link>
       </main>
-    </AppFrame>
   );
 }

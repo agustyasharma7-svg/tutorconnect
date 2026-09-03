@@ -33,6 +33,9 @@ export function saveAuth(tokens: AuthTokens, user: AuthUser) {
   localStorage.removeItem(ACCESS_KEY);
   localStorage.removeItem(REFRESH_KEY);
   localStorage.setItem(USER_KEY, JSON.stringify(user));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('tc-auth-changed'));
+  }
 }
 
 export function clearAuth() {
@@ -42,6 +45,7 @@ export function clearAuth() {
   if (typeof window !== 'undefined') {
     sessionStorage.removeItem(ACCESS_KEY);
     sessionStorage.removeItem(REFRESH_KEY);
+    window.dispatchEvent(new Event('tc-auth-changed'));
   }
   clearApiCache();
 }

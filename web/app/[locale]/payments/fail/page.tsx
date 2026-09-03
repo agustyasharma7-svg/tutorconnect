@@ -1,6 +1,5 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
 import { Alert, ButtonLink, Card, PageHeader } from '@/components/ui';
 import { useParams, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -12,8 +11,7 @@ export default function PaymentFailPage() {
   const reason = params.get('reason');
 
   return (
-    <AppFrame>
-      <main className="mx-auto max-w-lg px-4 py-10">
+    <main className="mx-auto max-w-lg px-4 py-10">
         <PageHeader title={t('failTitle')} />
         <Card>
           <Alert>{t('failBlurb')}</Alert>
@@ -27,6 +25,5 @@ export default function PaymentFailPage() {
           </ButtonLink>
         </Card>
       </main>
-    </AppFrame>
   );
 }

@@ -1,15 +1,6 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
-import {
-  Button,
-  ButtonLink,
-  Card,
-  CardDescription,
-  CardTitle,
-  PageHeader,
-  Spinner,
-} from '@/components/ui';
+import { Button, ButtonLink, Card, CardDescription, CardTitle, PageHeader, PageSkeleton } from '@/components/ui';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { getSupportEmail } from '@/lib/support';
 import { getStoredUser, logoutSession } from '@/lib/auth';
@@ -42,15 +33,12 @@ export default function SettingsPage() {
 
   if (!name) {
     return (
-      <div className="min-h-screen bg-cream">
-        <Spinner label={tc('loading')} />
-      </div>
+      <PageSkeleton />
     );
   }
 
   return (
-    <AppFrame>
-      <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+    <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
         <PageHeader title={t('settings')} description={t('settingsLead')} />
 
         <Card>
@@ -112,6 +100,5 @@ export default function SettingsPage() {
           {tc('logout')}
         </Button>
       </main>
-    </AppFrame>
   );
 }

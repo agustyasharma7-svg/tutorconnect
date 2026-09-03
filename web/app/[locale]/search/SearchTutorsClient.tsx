@@ -1,18 +1,7 @@
 ﻿'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
 import { VerifiedBadge } from '@/components/VerifiedBadge';
-import {
-  Alert,
-  Button,
-  ButtonLink,
-  Card,
-  EmptyState,
-  FormField,
-  Input,
-  PageHeader,
-  Select,
-} from '@/components/ui';
+import { Alert, Button, ButtonLink, Card, EmptyState, FormField, Input, PageHeader, Select } from '@/components/ui';
 import { api, apiWithAuth, assetUrl } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import { readBrowserPosition } from '@/lib/geo';
@@ -124,8 +113,7 @@ export default function SearchTutorsClient() {
   };
 
   return (
-    <AppFrame>
-      <main className="mx-auto max-w-3xl px-4 py-10">
+    <main className="mx-auto max-w-3xl px-4 py-10">
         <PageHeader title={t('searchTitle')} />
         {error && <Alert className="mb-3">{error}</Alert>}
         {message && (
@@ -310,6 +298,5 @@ export default function SearchTutorsClient() {
           </ul>
         )}
       </main>
-    </AppFrame>
   );
 }

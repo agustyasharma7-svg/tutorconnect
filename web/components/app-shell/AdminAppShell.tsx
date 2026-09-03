@@ -12,21 +12,28 @@ import { ReactNode, useEffect, useRef, useState } from 'react';
 type NavItem = { href: string; label: string; match?: 'exact' | 'prefix' };
 
 function initials(name: string) {
-  return name
-    .split(' ')
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase())
-    .join('') || 'T';
+  return (
+    name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase())
+      .join('') || 'A'
+  );
 }
 
-function pathActive(pathname: string, href: string, match: 'exact' | 'prefix' = 'prefix') {
+function pathActive(
+  pathname: string,
+  href: string,
+  match: 'exact' | 'prefix' = 'prefix',
+) {
   if (match === 'exact') return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function TutorAppShell({ children }: { children: ReactNode }) {
+export function AdminAppShell({ children }: { children: ReactNode }) {
   const t = useTranslations('dashboard');
+  const ta = useTranslations('admin');
   const tc = useTranslations('common');
   const { locale } = useParams<{ locale: string }>();
   const pathname = usePathname();
@@ -40,37 +47,28 @@ export function TutorAppShell({ children }: { children: ReactNode }) {
 
   const groups: { title: string; items: NavItem[] }[] = [
     {
-      title: t('navWork'),
+      title: t('navAdmin'),
       items: [
-        { href: `${base}/dashboard/tutor`, label: t('overview'), match: 'exact' },
-        { href: `${base}/requirements/open`, label: t('openRequirements') },
-        { href: `${base}/matches/mine`, label: t('myApplications') },
+        {
+          href: `${base}/dashboard/admin`,
+          label: t('overview'),
+          match: 'exact',
+        },
+        {
+          href: `${base}/admin/verification`,
+          label: ta('verificationQueue'),
+        },
+        {
+          href: `${base}/admin/commissions`,
+          label: t('commissions'),
+        },
       ],
     },
     {
-      title: t('navTeaching'),
+      title: t('navOps'),
       items: [
-        { href: `${base}/demos`, label: t('demos') },
-        { href: `${base}/schedule`, label: t('calendar') },
-        { href: `${base}/agreements`, label: t('agreements') },
-        { href: `${base}/chat`, label: t('chat') },
-      ],
-    },
-    {
-      title: t('navPayments'),
-      items: [
-        { href: `${base}/commissions`, label: t('commissions') },
-        { href: `${base}/payments/registration`, label: t('payRegistration') },
-        { href: `${base}/payments/history`, label: t('paymentHistory') },
-      ],
-    },
-    {
-      title: t('navAccount'),
-      items: [
-        { href: `${base}/profile/tutor`, label: t('profile') },
-        { href: `${base}/verification`, label: t('verification') },
-        { href: `${base}/settings`, label: t('settings'), match: 'exact' },
-        { href: `${base}/disputes`, label: t('disputes') },
+        { href: `${base}/disputes`, label: ta('disputes') },
+        { href: `${base}/help`, label: tc('navHelp') },
       ],
     },
   ];
@@ -114,7 +112,7 @@ export function TutorAppShell({ children }: { children: ReactNode }) {
   const sidebar = (
     <div className="flex h-full flex-col">
       <Link
-        href={`${base}/dashboard/tutor`}
+        href={`${base}/dashboard/admin`}
         className="flex h-14 items-center gap-2.5 border-b border-white/10 px-4"
         onClick={() => setSidebarOpen(false)}
       >
@@ -131,7 +129,11 @@ export function TutorAppShell({ children }: { children: ReactNode }) {
             </p>
             <ul className="mt-2 space-y-0.5">
               {group.items.map((item) => {
-                const active = pathActive(pathname, item.href, item.match ?? 'prefix');
+                const active = pathActive(
+                  pathname,
+                  item.href,
+                  item.match ?? 'prefix',
+                );
                 return (
                   <li key={item.href}>
                     <Link
@@ -152,15 +154,6 @@ export function TutorAppShell({ children }: { children: ReactNode }) {
           </div>
         ))}
       </nav>
-      <div className="border-t border-white/10 p-3">
-        <Link
-          href={`${base}/help`}
-          className="block rounded-lg px-2.5 py-2 text-sm text-[#c5c0b6] hover:bg-white/6 hover:text-white"
-          onClick={() => setSidebarOpen(false)}
-        >
-          {tc('navHelp')}
-        </Link>
-      </div>
     </div>
   );
 
@@ -202,7 +195,7 @@ export function TutorAppShell({ children }: { children: ReactNode }) {
               </svg>
             </button>
             <p className="truncate text-sm font-semibold text-ink lg:text-base">
-              {t('tutor')}
+              {t('admin')}
             </p>
           </div>
 
@@ -217,13 +210,15 @@ export function TutorAppShell({ children }: { children: ReactNode }) {
                 onClick={() => setMenuOpen((v) => !v)}
               >
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand text-[11px] font-semibold text-white">
-                  {initials(user?.name ?? 'Tutor')}
+                  {initials(user?.name ?? 'Admin')}
                 </span>
                 <span className="hidden min-w-0 text-left sm:block">
                   <span className="block truncate text-xs font-medium text-ink">
-                    {user?.name ?? t('tutor')}
+                    {user?.name ?? t('admin')}
                   </span>
-                  <span className="block text-[10px] text-[#6b7c8d]">{t('roleTutor')}</span>
+                  <span className="block text-[10px] text-ink-muted">
+                    {t('roleAdmin')}
+                  </span>
                 </span>
               </button>
               {menuOpen && (
@@ -232,18 +227,11 @@ export function TutorAppShell({ children }: { children: ReactNode }) {
                   className="absolute right-0 mt-2 w-52 overflow-hidden rounded-2xl border border-cream-dark bg-white py-1 shadow-lg"
                 >
                   <Link
-                    href={`${base}/profile/tutor`}
+                    href={`${base}/dashboard/admin`}
                     className="block px-3 py-2 text-sm text-ink hover:bg-cream"
                     role="menuitem"
                   >
-                    {t('profile')}
-                  </Link>
-                  <Link
-                    href={`${base}/settings`}
-                    className="block px-3 py-2 text-sm text-ink hover:bg-cream"
-                    role="menuitem"
-                  >
-                    {t('settings')}
+                    {t('overview')}
                   </Link>
                   <Link
                     href={`${base}/help`}

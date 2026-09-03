@@ -1,17 +1,6 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
-import {
-  Alert,
-  Button,
-  ButtonLink,
-  Card,
-  EmptyState,
-  FormField,
-  Input,
-  PageHeader,
-  Select,
-} from '@/components/ui';
+import { Alert, Button, ButtonLink, Card, EmptyState, FormField, Input, PageHeader, Select } from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -73,8 +62,7 @@ export default function DemosPage() {
   };
 
   return (
-    <AppFrame>
-      <main className="mx-auto max-w-2xl px-4 py-10">
+    <main className="mx-auto max-w-2xl px-4 py-10">
         <PageHeader title={t('title')} description={t('noChat')} />
         {error && <Alert className="mb-3">{error}</Alert>}
         {message && (
@@ -153,6 +141,5 @@ export default function DemosPage() {
           </ul>
         )}
       </main>
-    </AppFrame>
   );
 }

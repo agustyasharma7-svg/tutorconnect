@@ -1,7 +1,6 @@
 'use client';
 
-import { StudentAppShell } from '@/components/app-shell/StudentAppShell';
-import { ButtonLink, Card, PageHeader, Spinner } from '@/components/ui';
+import { ButtonLink, Card, PageHeader, PageSkeleton } from '@/components/ui';
 import { getStoredUser } from '@/lib/auth';
 import { AuthUser } from '@/lib/types';
 import { useParams, useRouter } from 'next/navigation';
@@ -30,9 +29,7 @@ export default function StudentDashboard() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-cream">
-        <Spinner label={tc('loading')} />
-      </div>
+      <PageSkeleton />
     );
   }
 
@@ -49,8 +46,7 @@ export default function StudentDashboard() {
   ];
 
   return (
-    <StudentAppShell>
-      <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+    <main className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
         <PageHeader
           title={t('student')}
           description={t('welcome', { name: user.name })}
@@ -66,6 +62,5 @@ export default function StudentDashboard() {
           </div>
         </Card>
       </main>
-    </StudentAppShell>
   );
 }

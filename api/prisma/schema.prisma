@@ -198,6 +198,12 @@ model Tutor {
   verificationRejectReason String?            @map("verification_reject_reason")
   ratingAvg                Float?             @map("rating_avg")
   ratingCount              Int                @default(0) @map("rating_count")
+  /// Free-text when catalog "Other" subject is selected
+  otherSubjects            String?            @map("other_subjects")
+  /// Free-text when catalog "Other" class is selected
+  otherClasses             String?            @map("other_classes")
+  /// Free-text when catalog "Other" board is selected
+  otherBoards              String?            @map("other_boards")
   createdAt                DateTime           @default(now()) @map("created_at")
   updatedAt                DateTime           @updatedAt @map("updated_at")
 

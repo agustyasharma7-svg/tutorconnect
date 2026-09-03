@@ -1,17 +1,6 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
-import {
-  Alert,
-  Button,
-  ButtonLink,
-  Card,
-  FormField,
-  Input,
-  PageHeader,
-  Spinner,
-  Textarea,
-} from '@/components/ui';
+import { Alert, Button, ButtonLink, Card, FormField, Input, PageHeader, Textarea, PageSkeleton } from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import { useParams, useRouter } from 'next/navigation';
@@ -116,15 +105,12 @@ export default function RequirementDetailPage() {
 
   if (!req) {
     return (
-      <div className="min-h-screen bg-cream">
-        <Spinner label={tc('loading')} />
-      </div>
+      <PageSkeleton />
     );
   }
 
   return (
-    <AppFrame>
-      <main className="mx-auto max-w-2xl px-4 py-10">
+    <main className="mx-auto max-w-2xl px-4 py-10">
         <PageHeader
           title={t('detail')}
           actions={
@@ -257,6 +243,5 @@ export default function RequirementDetailPage() {
             </Card>
           )}
       </main>
-    </AppFrame>
   );
 }

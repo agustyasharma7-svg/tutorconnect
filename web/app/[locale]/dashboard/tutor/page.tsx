@@ -1,7 +1,6 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
-import { Card, PageHeader, Spinner } from '@/components/ui';
+import { Card, PageHeader, PageSkeleton } from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import { AuthUser } from '@/lib/types';
@@ -48,9 +47,7 @@ export default function TutorDashboard() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-cream">
-        <Spinner label={tc('loading')} />
-      </div>
+      <PageSkeleton />
     );
   }
 
@@ -82,8 +79,7 @@ export default function TutorDashboard() {
   ];
 
   return (
-    <AppFrame>
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+    <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <PageHeader
           title={t('welcome', { name: user.name })}
           description={
@@ -115,6 +111,5 @@ export default function TutorDashboard() {
           ))}
         </div>
       </main>
-    </AppFrame>
   );
 }

@@ -1,14 +1,6 @@
 'use client';
 
-import { AppFrame } from '@/components/app-shell/AppFrame';
-import {
-  Alert,
-  Button,
-  ButtonLink,
-  Card,
-  EmptyState,
-  PageHeader,
-} from '@/components/ui';
+import { Alert, Button, ButtonLink, Card, EmptyState, PageHeader } from '@/components/ui';
 import { apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import { useParams, useRouter } from 'next/navigation';
@@ -65,8 +57,7 @@ export default function TutorMatchesPage() {
   };
 
   return (
-    <AppFrame>
-      <main className="mx-auto max-w-3xl px-4 py-10">
+    <main className="mx-auto max-w-3xl px-4 py-10">
         <PageHeader title={t('mineTitle')} />
         {error && <Alert className="mb-3">{error}</Alert>}
         {!rows.length && !error ? (
@@ -110,6 +101,5 @@ export default function TutorMatchesPage() {
           </ul>
         )}
       </main>
-    </AppFrame>
   );
 }
