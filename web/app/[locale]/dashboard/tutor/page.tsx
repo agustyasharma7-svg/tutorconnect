@@ -15,7 +15,6 @@ type TutorMe = {
 
 export default function TutorDashboard() {
   const t = useTranslations('dashboard');
-  const tc = useTranslations('common');
   const tp = useTranslations('profile');
   const router = useRouter();
   const { locale } = useParams<{ locale: string }>();

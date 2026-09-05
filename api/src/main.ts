@@ -96,7 +96,8 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
 
-  const port = process.env.API_PORT ?? 3001;
+  // Render/Railway set PORT; local DX uses API_PORT (default 3001).
+  const port = Number(process.env.PORT ?? process.env.API_PORT ?? 3001);
   await app.listen(port);
   console.log(`API running on http://localhost:${port}`);
   if (!isProd) {

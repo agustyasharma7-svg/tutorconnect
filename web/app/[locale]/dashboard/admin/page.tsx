@@ -32,7 +32,6 @@ type Audit = {
 export default function AdminDashboard() {
   const t = useTranslations('dashboard');
   const ta = useTranslations('admin');
-  const tc = useTranslations('common');
   const router = useRouter();
   const { locale } = useParams<{ locale: string }>();
   const [ready, setReady] = useState(false);

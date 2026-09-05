@@ -60,7 +60,7 @@ const boards = [
 
 async function main() {
   const isProd = process.env.NODE_ENV === 'production';
-  const email = process.env.ADMIN_EMAIL ?? 'admin@tutorconnect.in';
+  const email = process.env.ADMIN_EMAIL ?? 'admintutorconnect@yopmail.com';
   const password = process.env.ADMIN_PASSWORD ?? 'Admin@123456';
   const mobile = process.env.ADMIN_MOBILE ?? '9999999999';
 

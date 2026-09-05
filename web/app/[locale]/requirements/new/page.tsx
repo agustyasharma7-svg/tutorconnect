@@ -1,6 +1,6 @@
 'use client';
 
-import { Alert, Button, ButtonLink, Card, EmptyState, FormField, Input, PageHeader, Select, Textarea } from '@/components/ui';
+import { Alert, Button, ButtonLink, Card, FormField, Input, PageHeader, Select, Textarea } from '@/components/ui';
 import { api, apiWithAuth } from '@/lib/api';
 import { getAccessToken, getStoredUser } from '@/lib/auth';
 import { readBrowserPosition, resolveGeo } from '@/lib/geo';

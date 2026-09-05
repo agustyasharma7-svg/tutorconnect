@@ -9,7 +9,6 @@ import { useEffect, useState } from 'react';
 
 export default function StudentDashboard() {
   const t = useTranslations('dashboard');
-  const tc = useTranslations('common');
   const router = useRouter();
   const { locale } = useParams<{ locale: string }>();
   const [user, setUser] = useState<AuthUser | null>(null);

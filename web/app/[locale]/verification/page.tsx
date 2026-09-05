@@ -30,7 +30,6 @@ export default function VerificationPage() {
   const tc = useTranslations('common');
   const { locale } = useParams<{ locale: string }>();
   const router = useRouter();
-  const [token, setToken] = useState('');
   const [data, setData] = useState<Ver | null>(null);
   const [type, setType] = useState<(typeof TYPES)[number]>('AADHAAR');
   const [docNumber, setDocNumber] = useState('');
@@ -48,7 +47,6 @@ export default function VerificationPage() {
       router.replace(`/${locale}/auth/login`);
       return;
     }
-    setToken(access);
     load(access).catch((e) => setError(e instanceof Error ? e.message : 'Failed'));
   }, [locale, router]);
 
