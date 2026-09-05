@@ -268,10 +268,36 @@ export class AuthService {
     return { message: 'OTP sent to email' };
   }
 
+  private resolveOtp(): string {
+    const fixed = this.config.get<string>('OTP_FIXED_CODE')?.trim();
+    if (fixed) {
+      if (!/^\d{6}$/.test(fixed)) {
+        throw new BadRequestException(
+          'OTP_FIXED_CODE must be exactly 6 digits when set',
+        );
+      }
+      return fixed;
+    }
+    return this.generateOtp();
+  }
+
   private async sendOtpInternal(email: string) {
-    const otp = this.generateOtp();
+    const otp = this.resolveOtp();
     const ttl = Number(this.config.get('OTP_TTL_SECONDS') ?? 300);
     await this.redis.set(this.otpKey(email), this.hashOtp(otp), ttl);
+
+    const fixed = this.config.get<string>('OTP_FIXED_CODE')?.trim();
+    if (fixed) {
+      this.logger.warn(
+        `OTP_FIXED_CODE active — use ${fixed} for ${email} (email skipped)`,
+      );
+      return;
+    }
+
+    if (this.config.get<string>('OTP_DEBUG_LOG')?.trim() === 'true') {
+      this.logger.warn(`OTP_DEBUG_LOG ${email} => ${otp}`);
+    }
+
     // Return immediately — SMTP on Render/Resend often exceeds the browser 30s timeout.
     void this.mail.sendOtp(email, otp).catch((error) => {
       this.logger.error(
