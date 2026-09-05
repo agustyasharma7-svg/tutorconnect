@@ -185,16 +185,16 @@ function isNetworkError(error: AxiosError): boolean {
 }
 
 function isRetryable(error: unknown, method: string): boolean {
+  // Never retry mutating requests — register/login etc. are not idempotent.
+  // A timed-out POST can succeed on the server; retry then returns 409.
+  if (!isReadMethod(method)) return false;
   if (!isAxiosError(error)) return true;
   if (error.config?._retry) return false;
   if (isNetworkError(error)) return true;
   const status = error.response?.status;
   if (!status) return false;
   if (status === 401 || status === 403 || status === 404) return false;
-  if (isReadMethod(method)) {
-    return status === 408 || status === 429 || status >= 500;
-  }
-  return false;
+  return status === 408 || status === 429 || status >= 500;
 }
 
 function retryDelayMs(attempt: number): number {

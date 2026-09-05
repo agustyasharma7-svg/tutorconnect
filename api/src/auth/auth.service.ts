@@ -147,12 +147,31 @@ export class AuthService {
 
   async registerStudent(dto: RegisterStudentDto) {
     this.assertSoftLaunchAccess(dto.email, dto.inviteCode);
-    await this.assertUnique(dto.mobile, dto.email);
+    const email = dto.email.toLowerCase();
+    const existing = await this.findConflictingUser(dto.mobile, email);
+    if (existing) {
+      // Idempotent retry: first request may have created the user then timed out on SMTP.
+      if (
+        existing.role === UserRole.STUDENT &&
+        existing.status === UserStatus.PENDING_VERIFICATION &&
+        existing.mobile === dto.mobile &&
+        existing.email === email
+      ) {
+        await this.sendOtpInternal(email);
+        return {
+          message: 'Student registered. OTP sent to email.',
+          userId: existing.id,
+        };
+      }
+      throw new ConflictException(
+        'Mobile or email already registered. One account per role only.',
+      );
+    }
     const user = await this.prisma.user.create({
       data: {
         name: dto.name,
         mobile: dto.mobile,
-        email: dto.email.toLowerCase(),
+        email,
         role: UserRole.STUDENT,
         locale: dto.locale ?? 'en',
         status: UserStatus.PENDING_VERIFICATION,
@@ -167,12 +186,30 @@ export class AuthService {
 
   async registerTutor(dto: RegisterTutorDto) {
     this.assertSoftLaunchAccess(dto.email, dto.inviteCode);
-    await this.assertUnique(dto.mobile, dto.email);
+    const email = dto.email.toLowerCase();
+    const existing = await this.findConflictingUser(dto.mobile, email);
+    if (existing) {
+      if (
+        existing.role === UserRole.TUTOR &&
+        existing.status === UserStatus.PENDING_VERIFICATION &&
+        existing.mobile === dto.mobile &&
+        existing.email === email
+      ) {
+        await this.sendOtpInternal(email);
+        return {
+          message: 'Tutor registered. OTP sent to email.',
+          userId: existing.id,
+        };
+      }
+      throw new ConflictException(
+        'Mobile or email already registered. One account per role only.',
+      );
+    }
     const user = await this.prisma.user.create({
       data: {
         name: dto.name,
         mobile: dto.mobile,
-        email: dto.email.toLowerCase(),
+        email,
         role: UserRole.TUTOR,
         qualification: dto.qualification,
         locale: dto.locale ?? 'en',
@@ -211,15 +248,10 @@ export class AuthService {
     );
   }
 
-  private async assertUnique(mobile: string, email: string) {
-    const existing = await this.prisma.user.findFirst({
+  private async findConflictingUser(mobile: string, email: string) {
+    return this.prisma.user.findFirst({
       where: { OR: [{ mobile }, { email: email.toLowerCase() }] },
     });
-    if (existing) {
-      throw new ConflictException(
-        'Mobile or email already registered. One account per role only.',
-      );
-    }
   }
 
   async sendOtp(dto: SendOtpDto) {
