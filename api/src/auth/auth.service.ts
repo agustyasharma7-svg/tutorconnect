@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -22,6 +23,8 @@ import {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
@@ -269,7 +272,13 @@ export class AuthService {
     const otp = this.generateOtp();
     const ttl = Number(this.config.get('OTP_TTL_SECONDS') ?? 300);
     await this.redis.set(this.otpKey(email), this.hashOtp(otp), ttl);
-    await this.mail.sendOtp(email, otp);
+    // Return immediately — SMTP on Render/Resend often exceeds the browser 30s timeout.
+    void this.mail.sendOtp(email, otp).catch((error) => {
+      this.logger.error(
+        `Failed to send OTP to ${email}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+    });
   }
 
   async verifyOtp(dto: VerifyOtpDto) {
